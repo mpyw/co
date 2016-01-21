@@ -19,7 +19,9 @@
     "minimum-stability": "dev",
     "autoload": {
         "files": [
-            "src/*.php"
+            "src/helpers.php",
+            "src/curl_parallel_exec.php",
+            "src/curl_parallel_exec_generator.php"
         ]
     },
     "require": {
