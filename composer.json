@@ -17,11 +17,9 @@
         }
     ],
     "minimum-stability": "dev",
-    "autolaod": {
+    "autoload": {
         "files": [
-            "src/helpers.php",
-            "src/curl_parallel_exec.php",
-            "src/curl_parallel_exec_generator.php"
+            "src/*.php"
         ]
     },
     "require": {
