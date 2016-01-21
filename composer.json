@@ -1,0 +1,27 @@
+{
+    "name": "mpyw/simple-parallel-curl",
+    "description": "Simple parallel cURL functions with PHP5.5+ Generator",
+    "type": "library",
+    "version": "0.0.0",
+    "keywords": [
+        "curl",
+        "asynchronus",
+        "parallel",
+        "generator"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "mpyw",
+            "email": "ryosuke_i_628@yahoo.co.jp"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autolaod": {
+        "files": ["src/*.php"]
+    },
+    "require": {
+        "php": ">=5.5.*",
+        "lib-curl": "7.2.*"
+    }
+}
