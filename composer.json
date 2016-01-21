@@ -21,7 +21,7 @@
         "files": ["src/*.php"]
     },
     "require": {
-        "php": ">=5.5.*",
-        "lib-curl": "7.2.*"
+        "php": ">=5.5.0",
+        "lib-curl": ">=7.2.0"
     }
 }
