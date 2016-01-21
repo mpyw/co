@@ -2,6 +2,12 @@
 
 Simple parallel cURL functions with PHP5.5+ Generator
 
+## Installing
+
+```
+composer require mpyw/simple-parallel-curl:@dev
+```
+
 ## API
 
 All functions are defined **globally**, if not exists.
