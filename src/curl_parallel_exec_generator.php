@@ -197,7 +197,7 @@ if (!function_exists('curl_parallel_exec_generator')) {
                 $generators[$i] = $gen;
             }
             // register first yields
-            $try_with_resource($gen, function () use ($register, $gen) {
+            $try_with_resource($generators, function () use ($register, $gen) {
                 $register($gen);
             });
         }
@@ -221,7 +221,7 @@ if (!function_exists('curl_parallel_exec_generator')) {
             foreach ($entries as $entry) {
                 $gen = $m['id_to_generator'][(int)$entry['handle']];
                 $callback = $entry['result'] === CURLE_OK ? $resolve : $reject;
-                $added = $try_with_resource($gen, function () use ($callback, $entry) {
+                $added = $try_with_resource($generators, function () use ($callback, $entry) {
                     return $callback($entry);
                 });
             }
