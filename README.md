@@ -141,7 +141,7 @@ curl_parallel_exec_generator([
                 $d2 = (yield curl_get_init('http://example.com/d2'));
                 echo "Request for D2 done.\n";
             },
-        ], 10);
+        ]);
     },
     function () {
         $e = (yield curl_get_init('http://example.com/e'));
@@ -154,5 +154,5 @@ curl_parallel_exec_generator([
             echo "Request for F Failed ({$ex->getMessage()}).\n";
         }
     }
-], 10);
+]);
 ```
