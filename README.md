@@ -21,6 +21,18 @@ function curl_post_init($url, array $postfields = [], array $options = [])
 
 Simple wrappers for `curl_init()`. Some default values are defined.
 
+#### Arguments
+
+- **`(string)`** __*$url*__<br /> Destination URL for `curl_init()`.
+- **`(array<string, string|cURLFile>)`** __*$postfields*__<br /> Postfields. Multipart format is used when detected `cURLFile` instance.
+- **`(array<CURLOPT_*, mixed>)`** __*$options*__<br /> cURL options for `curl_setopt_array()`.
+
+#### Return Value
+
+**`(resource)`**<br /> cURL resource.
+
+#### Note
+
 ```php
 // Default values for GET
 $default = [
@@ -38,16 +50,6 @@ $default = [
     CURLOPT_SAFE_UPLOAD => true, // disable legacy filename annotation support for PHP5.4-
 ];
 ```
-
-#### Arguments
-
-- **`(string)`** __*$url*__<br /> Destination URL for `curl_init()`.
-- **`(array<string, string|cURLFile>)`** __*$postfields*__<br /> Postfields. Multipart format is used when detected `cURLFile` instance.
-- **`(array<CURLOPT_*, mixed>)`** __*$options*__<br /> cURL options for `curl_setopt_array()`.
-
-#### Return Value
-
-**`(resource)`**<br /> cURL resource.
 
 ### curl_parallel_exec()
 
