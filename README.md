@@ -81,7 +81,7 @@ Await all yielded cURL resources.
 
 #### Arguments
 
-- **`(array<mixed, Generator|Function<Generator>)`** __*$generators*__<br /> An array of Generator or Generator function. Keys are preserved for returning results.
+- **`(array<Generator|Function<Generator>)`** __*$generators*__<br /> An array of Generator or Generator function.
 - **`(float)`** __*$timeout*__<br /> Zero means infinite loop with spanning 1.0 sec.
 
 #### Return Value
