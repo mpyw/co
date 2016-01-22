@@ -30,7 +30,7 @@ if (!function_exists('curl_post_init')) {
      * Simple wrappers for curl_init(). Some default values are defined.
      *
      * @param string $url
-     * @param array<string, string> $postfields=[]
+     * @param array<string, string|CURLFile> $postfields=[]
      * @param array<CURLOPT_*, mixed> $options=[]
      * @return resource
      */

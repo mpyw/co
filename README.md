@@ -24,7 +24,7 @@ Simple wrappers for `curl_init()`. Some default values are defined.
 #### Arguments
 
 - **`(string)`** __*$url*__<br /> Destination URL for `curl_init()`.
-- **`(array<string, string|cURLFile>)`** __*$postfields*__<br /> Postfields. Multipart format is used when detected `cURLFile` instance.
+- **`(array<string, string|CURLFile>)`** __*$postfields*__<br /> Postfields. Multipart format is used when detected `CURLFile` instance.
 - **`(array<CURLOPT_*, mixed>)`** __*$options*__<br /> cURL options for `curl_setopt_array()`.
 
 #### Return Value
@@ -81,7 +81,7 @@ Await all yielded cURL resources.
 
 #### Arguments
 
-- **`(array<mixed, Generator|Function<Generator>)`** __*$curls*__<br /> An array of Generator or Generator function. Keys are preserved for returning results.
+- **`(array<mixed, Generator|Function<Generator>)`** __*$generators*__<br /> An array of Generator or Generator function. Keys are preserved for returning results.
 - **`(float)`** __*$timeout*__<br /> Zero means infinite.
 
 #### Return Value
