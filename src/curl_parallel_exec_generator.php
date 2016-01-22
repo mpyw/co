@@ -29,9 +29,13 @@ if (!function_exists('curl_parallel_exec_generator')) {
             /**
              * Dispose all resources related to a Generator.
              *
-             * @param Generator $gen
+             * @param Generator|array<Generator> $gen
              */
-            $dispose = function (\Generator $gen) use ($mh, &$m) {
+            $dispose = function ($gen) use ($mh, &$m, &$dispose) {
+                if (is_array($gen)) {
+                    array_walk($gen, $dispose);
+                    return;
+                }
                 $genhash = spl_object_hash($gen);
                 if (!empty($m['generator_to_curls'][$genhash])) {
                     foreach ($m['generator_to_curls'][$genhash] as $id => $ch) {
@@ -47,10 +51,10 @@ if (!function_exists('curl_parallel_exec_generator')) {
             /**
              * Automatically dispose when Exception thrown in a callback.
              *
-             * @param Generator $gen
+             * @param Generator|array<Generator> $gen
              * @param callable $callback
              */
-            $try_with_resource = function (\Generator $gen, callable $callback) use ($mh, &$m, $dispose) {
+            $try_with_resource = function ($gen, callable $callback) use ($mh, &$m, $dispose) {
                 try {
                     return $callback();
                 } catch (\Throwable $e) { // for PHP7+
@@ -227,7 +231,7 @@ if (!function_exists('curl_parallel_exec_generator')) {
         foreach ($generators as $gen) {
             if ($gen->valid()) {
                 // throw RuntimeException if timeout
-                $try_with_resource($gen, function () use ($gen) {
+                $try_with_resource($generators, function () use ($gen) {
                     $gen->throw(new \RuntimeException('still runnning, but curl_multi_select() timeout'));
                 });
             }

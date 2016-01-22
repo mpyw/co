@@ -2,7 +2,7 @@
     "name": "mpyw/simple-parallel-curl",
     "description": "Simple parallel cURL functions with PHP5.5+ Generator",
     "type": "library",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "keywords": [
         "curl",
         "asynchronus",
