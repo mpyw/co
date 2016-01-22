@@ -10,11 +10,14 @@ if (!function_exists('curl_get_init')) {
      * @return resource
      */
     function curl_get_init($url, array $options = []) {
-        static $default = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => 'gzip',
-            CURLOPT_FOLLOWLOCATION => (string)ini_get('open_basedir') === '',
-        ];
+        static $default;
+        if (!$default) {
+            $default = [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => 'gzip',
+                CURLOPT_FOLLOWLOCATION => (string)ini_get('open_basedir') === '',
+            ];
+        }
         $ch = curl_init($url);
         curl_setopt_array($ch, $options + $default);
         return $ch;
@@ -32,13 +35,16 @@ if (!function_exists('curl_post_init')) {
      * @return resource
      */
     function curl_post_init($url, array $postfields = [], array $options = []) {
-        static $default = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => 'gzip',
-            CURLOPT_FOLLOWLOCATION => (string)ini_get('open_basedir') === '',
-            CURLOPT_POST => true,
-            CURLOPT_SAFE_UPLOAD => true,
-        ];
+        static $default;
+        if (!$default) {
+            $default = [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => 'gzip',
+                CURLOPT_FOLLOWLOCATION => (string)ini_get('open_basedir') === '',
+                CURLOPT_POST => true,
+                CURLOPT_SAFE_UPLOAD => true,
+            ];
+        }
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POSTFIELDS,
             array_filter($postfields, function ($v) { return $v instanceof \CURLFile; })
