@@ -62,7 +62,7 @@ Await all cURL resources and return results.
 #### Arguments
 
 - **`(array<mixed, resource>)`** __*$curls*__<br /> An array of cURL resources. Keys are preserved for returning results.
-- **`(float)`** __*$timeout*__<br /> Zero means infinite.
+- **`(float)`** __*$timeout*__<br /> Zero means infinite loop with spanning 1.0 sec.
 
 #### Return Value
 
@@ -82,11 +82,11 @@ Await all yielded cURL resources.
 #### Arguments
 
 - **`(array<mixed, Generator|Function<Generator>)`** __*$generators*__<br /> An array of Generator or Generator function. Keys are preserved for returning results.
-- **`(float)`** __*$timeout*__<br /> Zero means infinite.
+- **`(float)`** __*$timeout*__<br /> Zero means infinite loop with spanning 1.0 sec.
 
 #### Return Value
 
-**`(array<mixed, string|RuntimeException>)`**<br /> An array of content string or `RuntimeException`
+**`(null)`**
 
 #### Note
 
