@@ -3,14 +3,12 @@
 if (!function_exists('curl_parallel_exec_generator')) {
 
     /**
-     * Process yielded cURL resources RECURSIVELY.
-     * Both generators and generator functions can be passed.
-     * All events are observed in a single event loop.
+     * Await all yielded cURL resources.
      *
-     * @param array<Generator>|array<Function<Generator>> $generators
-     * @param int $timeout
+     * @param array<Generator|Function<Generator>> $generators
+     * @param float $timeout=0.0
      */
-    function curl_parallel_exec_generator(array $generators, $timeout) {
+    function curl_parallel_exec_generator(array $generators, $timeout = 0.0) {
 
         static $mh, $m, $register, $resolve, $reject, $dispose, $try_with_resource;
 
@@ -207,9 +205,9 @@ if (!function_exists('curl_parallel_exec_generator')) {
 
         // loop until all yields done or timeout
         do {
-            // update state
+            // await and update state
             $added = false;
-            $is_timeout = curl_multi_select($mh, $timeout) === 0;
+            $is_timeout = curl_multi_select($mh, $timeout > 0 ? $timeout : 1.0) === 0 && $timeout > 0;
             curl_multi_exec($mh, $active);
             // dequeue entries
             // NOTE: enqueuing and dequeuing at the same time causes curl_multi_info_read() hang up bugs!!

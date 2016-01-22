@@ -3,19 +3,21 @@
 if (!function_exists('curl_parallel_exec')) {
 
     /**
-     * Convert array of curl resources into content strings.
+     * Await all cURL resources and return results.
+     * - All events are observed in a static event loop. You can call recursively.
+     * - Any values are yieldables. This function replace each cURL resource into content string recursively.
      *
-     * @param array<resource<curl>> $curls
-     * @param int $timeout
-     * @return array<string>
+     * @param array<resource> $curls
+     * @param float $timeout=0.0
+     * @return array<string|RuntimeException>
      */
-    function curl_parallel_exec(array $curls, $timeout) {
+    function curl_parallel_exec(array $curls, $timeout = 0.0) {
 
         $mh = curl_multi_init();
 
         // resource mapping
         $id_to_offsets = [];  // array<curl resource id, original offset>
-        $results = []; // array<>
+        $results = []; // array<string|RuntimeException>
 
         // register resources
         foreach ($curls as $i => $ch) {
@@ -32,8 +34,8 @@ if (!function_exists('curl_parallel_exec')) {
 
         // loop until all done or timeout
         do {
-            // update state
-            $is_timeout = curl_multi_select($mh, $timeout) === 0;
+            // await and update state
+            $is_timeout = curl_multi_select($mh, $timeout > 0 ? $timeout : 1.0) === 0 && $timeout > 0;
             curl_multi_exec($mh, $active);
             // dequeue entries
             do if ($entry = curl_multi_info_read($mh, $remains)) {
