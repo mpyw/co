@@ -9,7 +9,6 @@ if (!function_exists('curl_parallel_exec_generator')) {
      *
      * @param array<Generator>|array<Function<Generator>> $generators
      * @param int $timeout
-     * @return array<string>
      */
     function curl_parallel_exec_generator(array $generators, $timeout) {
 

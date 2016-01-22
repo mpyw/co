@@ -13,10 +13,10 @@ composer require mpyw/simple-parallel-curl:@dev
 All functions are defined **globally**, if not exists.
 
 ```php
-function curl_get_init($url, array $options = [])
-function curl_post_init($url, array $postfields = [], array $options = [])
-function curl_parallel_exec(array $curls, $timeout)
-function curl_parallel_exec_generator(array $generators, $timeout)
+function curl_get_init($url, array $options = []) : resource<curl>
+function curl_post_init($url, array $postfields = [], array $options = []) : resource<curl>
+function curl_parallel_exec(array $curls, $timeout) : array<string>
+function curl_parallel_exec_generator(array $generators, $timeout) : null
 ```
 
 ## Example
