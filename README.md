@@ -138,7 +138,7 @@ The rules are applied recursively.
 
 The following `yield` statements can specify Exception-safe or Exception-unsafe.
 
-```
+```php
 yield CO::SAFE => $value
 yield CO::UNSAFE => $value
 ```
