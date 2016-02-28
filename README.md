@@ -81,7 +81,7 @@ static wait(mixed $value, int $concurrency = null, bool $throw = null) : mixed
 
 Parallel execution along with `Co::wait()`, **without waiting**.
 Options are inherited from `Co::wait()`.  
-<ins>This method is mainly expected to be used in `CURLOPT_WRITEFUNCTION` callback.</ins>
+<ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
 
 ```php
 static Co::async(mixed $value) : mixed
