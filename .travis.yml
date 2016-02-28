@@ -1,0 +1,20 @@
+language: php
+
+php:
+  - 5.5
+  - 7.0
+  - hhvm
+
+before_script:
+  - curl -s http://getcomposer.org/installer | php
+  - php composer.phar update --prefer-source
+
+sudo: false
+
+cache:
+  directories:
+    - vendor
+    - $HOME/.composer/cache
+
+script:
+  - php vendor/bin/codecept run

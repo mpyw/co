@@ -191,6 +191,6 @@ echo (yield $bar);
 
 ## Todos
 
-- Add PHPUnit tests
+- Tests
 - Fix bugs
 - Fix broken examples
