@@ -1,31 +1,47 @@
 {
-    "name": "mpyw/simple-parallel-curl",
-    "description": "Simple parallel cURL functions with PHP5.5+ Generator",
+    "name": "mpyw/co",
+    "description": "Asynchronus cURL executor simply based on resource and Generator",
     "type": "library",
-    "version": "0.1.1",
+    "license": "MIT",
     "keywords": [
         "curl",
+        "http",
         "asynchronus",
         "parallel",
         "generator"
     ],
-    "license": "MIT",
     "authors": [
         {
             "name": "mpyw",
             "email": "ryosuke_i_628@yahoo.co.jp"
         }
     ],
-    "minimum-stability": "dev",
     "autoload": {
-        "files": [
-            "src/helpers.php",
-            "src/curl_parallel_exec.php",
-            "src/curl_parallel_exec_generator.php"
-        ]
+        "psr-4": {
+            "mpyw\\Co\\": "src/"
+        }
     },
     "require": {
-        "php": ">=5.5.0",
+        "php": ">=5.3.0",
         "lib-curl": ">=7.2.0"
+    },
+    "require-dev": {
+        "php": ">=5.3.0",
+        "lib-curl": ">=7.2.0",
+        "phpunit/phpunit": "~5.0",
+        "codeception/aspect-mock": "^0.5.5",
+        "mpyw/twistoauth": "~3.0"
+    },
+    "scripts": {
+        "test": [
+            "vendor/bin/phpunit --bootstrap vendor/autoload.php tests"
+        ]
+    },
+    "archive": {
+        "exclude": [
+            "*",
+            ".*",
+            "!/src/*"
+        ]
     }
 }
