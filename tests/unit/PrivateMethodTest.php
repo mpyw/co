@@ -11,13 +11,8 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     private static function getMethod($method_name)
     {
-        $instance = new \ReflectionClass('mpyw\Co\Co');
-        $co = $instance->newInstanceWithoutConstructor();
-        $closure = function () use ($method_name) {
-            $method = ['mpyw\Co\Co', $method_name];
-            return call_user_func_array($method, func_get_args());
-        };
-        return $closure->bindTo($co, $co);
+        $rm = new \ReflectionMethod('mpyw\Co\Co', $method_name);
+        return $rm->getClosure();
     }
 
     public function testIsCurl()
