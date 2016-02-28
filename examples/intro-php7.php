@@ -12,7 +12,7 @@ function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
 }
 function get_xpath_async($url) {
     $dom = new \DOMDocument;
-    @$dom->loadHTML(yield curl_init_with("https://github.com/mpyw"));
+    @$dom->loadHTML(yield curl_init_with($url));
     return new \DOMXPath($dom);
 }
 
