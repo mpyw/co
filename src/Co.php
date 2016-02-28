@@ -479,6 +479,7 @@ class Co
         $enqueued = $this->initialize($value, $parent_hash, $keylist);
         if (!$enqueued && $parent && !$this->value_to_children[$parent_hash]) { // Generator complete?
             // Traverse parent stack.
+            $parent->send($value);
             $this->updateGenerator($parent);
         }
     }

@@ -5,9 +5,6 @@ use mpyw\Co\CURLException;
 
 require __DIR__ . '/client_init.php';
 
-// Todo
-trigger_error('Currenly this script is broken', E_USER_NOTICE);
-
 // Wait 7 sec
 $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 7]), function () {
     // Wait 4 sec

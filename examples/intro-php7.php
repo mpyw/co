@@ -10,6 +10,11 @@ function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
     curl_setopt_array($ch, $options);
     return $ch;
 }
+function get_xpath_async($url) {
+    $dom = new \DOMDocument;
+    @$dom->loadHTML(yield curl_init_with("https://github.com/mpyw"));
+    return new \DOMXPath($dom);
+}
 
 var_dump(Co::wait([
     "google.com HTML" => curl_init_with("https://google.com"),
@@ -17,11 +22,11 @@ var_dump(Co::wait([
         return strlen(yield curl_init_with("https://github.com"));
     },
     "Save mpyw's Gravatar Image URL to local" => function () {
-        $dom = new \DOMDocument;
-        @$dom->loadHTML(yield curl_init_with("https://github.com/mpyw"));
-        $xpath = new \DOMXPath($dom);
-        $url = $xpath->evaluate('string(//img[contains(@class,"avatar")]/@src)');
-        yield curl_init_with($url, [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]);
+        yield curl_init_with(
+            (yield get_xpath_async('https://github.com/mpyw'))
+                ->evaluate('string(//img[contains(@class,"avatar")]/@src)'),
+            [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]
+        );
         return "Saved as /tmp/mpyw.png";
     },
 ]));

@@ -52,7 +52,7 @@ function serve() {
         exit(1);
     }
     while (true) {
-        $con = @stream_socket_accept($socket);
+        $con = @stream_socket_accept($socket, -1);
         if (!$con) {
             $err = error_get_last(); // どーなんだこれ strerror(EINTR)
             if (strpos($err["message"], "Interrupted system call") !== false)
