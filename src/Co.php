@@ -606,13 +606,19 @@ class Co
      * @access private
      * @static
      * @param mixed $value
+     * @param array &$carry
      * @return array<mixed>
      */
-    private static function flatten($value)
+    private static function flatten($value, &$carry = array())
     {
-        $it = new \RecursiveArrayIterator(array($value));
-        $it = new \RecursiveIteratorIterator($it);
-        return iterator_to_array($it, false);
+        if (!self::isArrayLike($value)) {
+            $carry[] = $value;
+        } else {
+            foreach ($value as $v) {
+                self::flatten($v, $carry);
+            }
+        }
+        return func_num_args() <= 1 ? $carry : null;
     }
 
 }
