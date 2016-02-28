@@ -1,6 +1,6 @@
 # Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master)
 
-Asynchronus cURL executor simply based on resource and Generator.
+Asynchronous cURL executor simply based on resource and Generator.
 
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
@@ -37,7 +37,7 @@ var_dump(Co::wait([
 ]));
 ```
 
-Those requests are executed as asynchronus as it can :smile:
+Those requests are executed as asynchronous as it can :smile:
 
 ## Installing
 
