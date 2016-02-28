@@ -1,6 +1,6 @@
 # Co
 
-Simple parallel cURL functions with PHP5.5+ Generator.
+Asynchronus parallel cURL execution with Generator.
 
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
@@ -30,7 +30,7 @@ Wait all cURL requests to be completed.
 Options override static defaults.
 
 ```php
-wait(mixed $value, int $concurrency = null, bool $throw = null) : mixed
+static wait(mixed $value, int $concurrency = null, bool $throw = null) : mixed
 ```
 
 #### Arguments
@@ -105,7 +105,7 @@ The following conversion are applied recursively.
 ### Exception-safe or Exception-unsafe priority
 
 1. `yield CO::UNSAFE => $var` or `yield CO::SAFE => $var`
-2. 3rd argument of `Co::wait()`\
+2. 3rd argument of `Co::wait()`
 3. Static default
 
 ### Comparison Generator of PHP7.0+ or PHP5.5~5.6
@@ -114,7 +114,7 @@ The following conversion are applied recursively.
 
 PHP7.0+:
 
-```
+```php
 yield $foo;
 yield $bar;
 return $baz;
@@ -122,7 +122,7 @@ return $baz;
 
 PHP5.5~5.6:
 
-```
+```php
 yield $foo;
 yield $bar;
 yield Co::RETURN_WITH => $baz;
@@ -132,14 +132,14 @@ yield Co::RETURN_WITH => $baz;
 
 PHP7.0+:
 
-```
+```php
 $a = yield $foo;
 echo yield $bar;
 ```
 
 PHP5.5~5.6:
 
-```
+```php
 $a = (yield $foo);
 echo (yield $bar);
 ```
