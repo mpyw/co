@@ -1,4 +1,4 @@
-# Co
+# Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co)
 
 Asynchronus cURL executor simply based on resource and Generator.
 
