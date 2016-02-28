@@ -1,6 +1,6 @@
 # Co
 
-Asynchronus parallel cURL execution with Generator.
+Asynchronus cURL executor simply based on resource and Generator.
 
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|

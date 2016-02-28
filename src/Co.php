@@ -3,12 +3,13 @@
 namespace mpyw\Co;
 
 /**
- * Asynchronus parallel cURL execution with Generator.
+ * Asynchronus cURL executor simply based on resource and Generator.
  * http://github.com/mpyw/co
  *
  * @author mpyw
  * @license MIT
  */
+
 class Co
 {
 
