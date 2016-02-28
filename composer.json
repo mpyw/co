@@ -32,7 +32,8 @@
         "codeception/aspect-mock": "^0.5.5",
         "codeception/codeception": "*",
         "codeception/specify": "*",
-        "codeception/verify": "*"
+        "codeception/verify": "*",
+        "satooshi/php-coveralls": "^1.0"
     },
     "scripts": {
         "test": [

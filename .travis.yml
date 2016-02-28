@@ -5,16 +5,23 @@ php:
   - 5.6
   - 7.0
 
-before_script:
-  - curl -s http://getcomposer.org/installer | php
-  - php composer.phar update --prefer-source
+install:
+  - composer install
+  - ./vendor/bin/codecept build
 
 sudo: false
 
 cache:
   directories:
-    - vendor
+    - ./vendor
     - $HOME/.composer/cache
 
 script:
-  - php vendor/bin/codecept run
+  - php vendor/bin/codecept run --coverage --coverage-xml
+
+branches:
+  only:
+    - master
+
+after_script:
+  - travis_retry php vendor/bin/coveralls
