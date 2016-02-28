@@ -38,7 +38,7 @@ class Co
      *
      * *Stack ID* means...
      *   - Generator ID
-     *   - "wait" (Root Co::wait calls)
+     *   - "wait" (Co::wait calls)
      *   - "async" (Co::async calls)
      */
     private $mh;                          // curl_multi_init()
@@ -196,13 +196,16 @@ class Co
      *
      * @access private
      * @param mixed $value mixed
-     * @param string $parent_hash      *Stack ID* or "root" or ""
+     * @param string $parent_hash      *Stack ID*
      * @param array<string>? $keylist  Queue of keys for its hierarchy.
      */
     private function setTree($value, $parent_hash, array $keylist = array())
     {
         $current = &$this->tree[$parent_hash];
         while (null !== $key = array_shift($keylist)) {
+            if (!is_array($current)) {
+                $current = array();
+            }
             $current = &$current[$key];
         }
         $current = $value;
@@ -400,7 +403,7 @@ class Co
         $result =
             $errno === CURLE_OK
             ? curl_multi_getcontent($value)
-            : new CURLException(curl_error($value), $errno)
+            : new CURLException(curl_error($value), $errno, $value)
         ;
         $this->setTree($result, $parent_hash, $keylist);
         $this->unsetTable($hash);
@@ -452,7 +455,7 @@ class Co
         $this->unsetTable($hash);
         $this->unsetTree($hash);
         $enqueued = $this->initialize($value, $parent_hash, $keylist);
-        if (!$enqueued && $parent) { // Generator complete?
+        if (!$enqueued && $parent && !$this->value_to_children[$parent_hash]) { // Generator complete?
             // Traverse parent stack.
             $this->updateGenerator($parent);
         }
@@ -522,15 +525,13 @@ class Co
     private static function getGeneratorReturn(\Generator $value)
     {
         $value->current();
-        return
-            $value->valid() // yield Co::RETURN_WITH => XX
-            ? $value->current()
-            : (
-                method_exists($value, 'getReturn') // PHP 7+
-                ? $value->getReturn()
-                : null
-            )
-        ;
+        if ($value->valid() && $value->key() === self::RETURN_WITH) {  // yield Co::RETURN_WITH => XX
+            return $value->current();
+        }
+        if ($value->valid()) {
+            throw new \LogicException('Unreachable statement.');
+        }
+        return method_exists($value, 'getReturn') ? $value->getReturn() : null;
     }
 
     /**

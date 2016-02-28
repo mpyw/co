@@ -8,19 +8,19 @@ require __DIR__ . '/client_init.php';
 // Todo
 trigger_error('Currenly this script is broken', E_USER_NOTICE);
 
-// Wait 9 sec
+// Wait 7 sec
 $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 7]), function () {
     // Wait 4 sec
     print_r(yield [
         curl('/rest', ['id' => 2, 'sleep' => 3]),
         curl('/rest', ['id' => 3, 'sleep' => 4]),
     ]);
-    // Wait 3 sec
+    // Wait 2 sec
     print_r(yield [
         function () {
             // Wait 1 sec
             echo yield curl('/rest', ['id' => 4, 'sleep' => 1]), "\n";
-            return curl('/rest', ['id' => 5, 'sleep' => 2]);
+            return curl('/rest', ['id' => 5, 'sleep' => 1]);
         },
         function () {
             // Wait 0 sec

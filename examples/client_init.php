@@ -8,6 +8,7 @@ function curl($path, array $q = array()) {
     curl_setopt_array($ch, array(
         CURLOPT_URL => "http://localhost:8080$path?" . http_build_query($q, '', '&'),
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
     ));
     return $ch;
 }
