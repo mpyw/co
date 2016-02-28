@@ -1,12 +1,12 @@
 {
     "name": "mpyw/co",
-    "description": "Asynchronus cURL executor simply based on resource and Generator",
+    "description": "Asynchronous cURL executor simply based on resource and Generator",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "curl",
         "http",
-        "asynchronus",
+        "asynchronous",
         "parallel",
         "generator"
     ],
