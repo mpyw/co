@@ -2,6 +2,8 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 set_time_limit(0);
+declare(ticks = 1);
+pcntl_signal(SIGCHLD, "signal_handler");
 serve();
 
 function fsend($con, $data) {
@@ -49,20 +51,21 @@ function serve() {
         fwrite(STDERR, "[Server] $errstr($errno)\n");
         exit(1);
     }
-    while ($con = stream_socket_accept($socket)) {
+    while (true) {
+        $con = @stream_socket_accept($socket);
+        if (!$con) {
+            $err = error_get_last(); // どーなんだこれ strerror(EINTR)
+            if (strpos($err["message"], "Interrupted system call") !== false)
+                continue;
+            fwrite(STDERR, "[Server] " . $err["message"] . "\n");
+            exit(1);
+        }
         if (-1 === $pid = pcntl_fork()) {
             fwrite(STDERR, "[Server] Failed to fork\n");
             exit(1);
         }
-        if ($pid) { // grandparant process
-            continue;
-        }
-        if (-1 === $pid = pcntl_fork()) {
-            fwrite(STDERR, "[Server] Failed to fork doubly\n");
-            exit(1);
-        }
         if ($pid) { // parent process
-            exit(0);
+            continue;
         }
         $endpoints = array(
             '/rest' => function ($con, $q) {
@@ -95,5 +98,16 @@ function serve() {
             }
         }
         exit(0); // Unreachable here
+    }
+}
+
+function signal_handler($sig) {
+    if ($sig === SIGCHLD) {
+        $ignore = NULL;
+        while (($rc = pcntl_waitpid(-1, $ignore, WNOHANG)) > 0) { }
+        if ($rc === -1 && pcntl_get_last_error() !== PCNTL_ECHILD) {
+            fwrite(STDERR, "waitpid() failed: " . pcntl_strerror(pcntl_get_last_error()) . "\n");
+            exit(1);
+        }
     }
 }
