@@ -407,10 +407,7 @@ class Co
         ;
         $this->setTree($result, $parent_hash, $keylist);
         $this->unsetTable($hash);
-        if ($errno !== CURLE_OK // Error and is to be thrown into Generator?
-            and $parent
-            and $parent->key() === self::UNSAFE
-            || $parent->key() !== self::SAFE && $this->throw) {
+        if ($errno !== CURLE_OK && $parent && $this->canThrow($parent)) {// Error and is to be thrown into Generator?
             $this->unsetTree($hash); // No more needed
             $parent->throw($result);
             $this->updateGenerator($parent);
@@ -424,6 +421,31 @@ class Co
             $result = $this->tree[$parent_hash];
             $parent->send($result);
             $this->updateGenerator($parent);
+        }
+    }
+
+    /**
+     * Check current Generator can throw a CURLException.
+     *
+     * @access private
+     * @param Generator $value
+     * @return bool
+     */
+    private function canThrow(\Generator $value)
+    {
+        while (true) {
+            $key = $value->key();
+            if ($key === self::SAFE) {
+                return false;
+            }
+            if ($key === self::UNSAFE) {
+                return true;
+            }
+            $parent_hash = $this->value_to_parent[spl_object_hash($value)];
+            if (!isset($this->values[$parent_hash])) {
+                return $this->throw;
+            }
+            $value = $this->values[$parent_hash];
         }
     }
 

@@ -9,6 +9,30 @@ Asynchronus cURL executor simply based on resource and Generator.
 | 5.3~5.4 | :cold_sweat: | No Generator |
 | ~5.2 | :boom: | Incompatible at all |
 
+```php
+function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true]) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, $options);
+    return $ch;
+}
+
+var_dump(Co::wait([
+    "google.com HTML" => curl_init_with("https://google.com"),
+    "Content-Length of github.com" => function () {
+        return strlen(yield curl_init_with("https://github.com"));
+    },
+    "Save mpyw's Gravatar Image URL to local" => function () {
+        $dom = new \DOMDocument;
+        @$dom->loadHTML(yield curl_init_with("https://github.com/mpyw"));
+        $xpath = new \DOMXPath($dom);
+        $url = $xpath->evaluate('string(//img[contains(@class,"avatar")]/@src)');
+        yield curl_init_with($url, [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]);
+        return "Saved as /tmp/mpyw.png";
+    },
+]));
+```
+
+Those requests are executed as asynchronus as it can :smile:
 
 ## Installing
 
@@ -18,6 +42,7 @@ composer require mpyw/co:@dev
 
 ```php
 require 'vendor/autoload.php';
+
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 ```
@@ -93,7 +118,9 @@ Omitted
 
 ### Conversion on resolving
 
-The following conversion are applied recursively.
+All values are resolved by the following rules.  
+Yielded values are also sent into the Generator.  
+The rules are applied recursively.
 
 | Before | After |
 |:---:|:----:|
@@ -104,9 +131,19 @@ The following conversion are applied recursively.
 
 ### Exception-safe or Exception-unsafe priority
 
-1. `yield CO::UNSAFE => $var` or `yield CO::SAFE => $var`
-2. 3rd argument of `Co::wait()`
-3. Static default
+The following `yield` statements can specify Exception-safe or Exception-unsafe.
+
+```
+yield CO::SAFE => $value
+yield CO::UNSAFE => $value
+```
+
+Priority:
+
+1. Current scope `yield` option
+2. Parent scope `yield` option
+3. 3rd argument of `Co::wait()`
+4. Static default
 
 ### Comparison Generator of PHP7.0+ or PHP5.5~5.6
 
@@ -147,4 +184,5 @@ echo (yield $bar);
 ## Todos
 
 - Add PHPUnit tests
+- Fix bugs
 - Fix broken examples
