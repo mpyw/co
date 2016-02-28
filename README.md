@@ -60,7 +60,7 @@ Wait all cURL requests to be completed.
 Options override static defaults.
 
 ```php
-static wait(mixed $value, int $concurrency = null, bool $throw = null) : mixed
+static Co::wait(mixed $value, int $concurrency = null, bool $throw = null) : mixed
 ```
 
 #### Arguments
