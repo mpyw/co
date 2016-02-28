@@ -20,31 +20,6 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
         return $closure->bindTo($co, $co);
     }
 
-    public function testFlatten()
-    {
-        $flatten = self::getMethod('flatten');
-
-        $this->specify("Nested array should be flattened",
-        function () use ($flatten) {
-            $from = [[['a', ['b'], [[['c', 'foo' => 'd']]]]]];
-            $to = ['a', 'b', 'c', 'd'];
-            $this->assertEquals($to, $flatten($from));
-        });
-
-        $this->specify(
-            "Arrays and Iterators should be flattened as Arrays, " .
-            "but Generators should be ignored",
-        function () use ($flatten) {
-            $gen = call_user_func(function () { yield 1; });
-            $from = [
-                new \RecursiveArrayIterator([1, [$gen], 2]),
-                new \ArrayIterator([3, [$gen], 4]),
-            ];
-            $to = [1, $gen, 2, 3, $gen, 4];
-            $this->assertEquals($to, $flatten($from));
-        });
-    }
-
     public function testIsCurl()
     {
         $isCurl = self::getMethod('isCurl');
@@ -86,6 +61,31 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
             $this->assertFalse($isArrayLike($gen));
             $this->assertTrue($isArrayLike($arr));
             $this->assertTrue($isArrayLike($it));
+        });
+    }
+
+    public function testFlatten()
+    {
+        $flatten = self::getMethod('flatten');
+
+        $this->specify("Nested array should be flattened",
+        function () use ($flatten) {
+            $from = [[['a', ['b'], [[['c', 'foo' => 'd']]]]]];
+            $to = ['a', 'b', 'c', 'd'];
+            $this->assertEquals($to, $flatten($from));
+        });
+
+        $this->specify(
+            "Arrays and Iterators should be flattened as Arrays, " .
+            "but Generators should be ignored",
+        function () use ($flatten) {
+            $gen = call_user_func(function () { yield 1; });
+            $from = [
+                new \RecursiveArrayIterator([1, [$gen], 2]),
+                new \ArrayIterator([3, [$gen], 4]),
+            ];
+            $to = [1, $gen, 2, 3, $gen, 4];
+            $this->assertEquals($to, $flatten($from));
         });
     }
 

@@ -3,6 +3,8 @@
 
 include __DIR__.'/../vendor/autoload.php'; // composer autoload
 
+\Codeception\Specify\Config::setDeepClone(false);
+
 $kernel = \AspectMock\Kernel::getInstance();
 $kernel->init([
     'debug' => true,
