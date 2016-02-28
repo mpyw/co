@@ -23,6 +23,9 @@ class Co
      *                         Exceptions are just to be returned.
      */
     const RETURN_WITH = '__RETURN_WITH__';
+    const RETURN_ = '__RETURN_WITH__'; // alias
+    const RET = '__RETURN_WITH__'; // alias
+    const RTN = '__RETURN_WITH__'; // alias
     const UNSAFE = '__UNSAFE__';
     const SAFE = '__SAFE__';
 

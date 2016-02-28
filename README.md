@@ -170,6 +170,9 @@ yield $bar;
 yield Co::RETURN_WITH => $baz;
 ```
 
+Although experimently aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,  
+**`Co::RETURN_WITH`** is recommended in terms of readability.
+
 #### `yield` Statements with assignment
 
 PHP7.0+:
