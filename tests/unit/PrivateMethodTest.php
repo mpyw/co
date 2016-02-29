@@ -15,6 +15,42 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
         return $rm->getClosure();
     }
 
+    public function testValidateInterval()
+    {
+        $validateInterval = self::getMethod('validateInterval');
+        $validateIntervalEx = function ($v) use ($validateInterval) {
+            try {
+                $validateInterval($v);
+                $this->assertTrue(false);
+            } catch (\InvalidArgumentException $e) {
+                $this->assertTrue(true);
+            }
+        };
+
+        $this->specify(
+            "Numeric should be float",
+        function () use ($validateInterval) {
+            $this->assertEquals(0.0, $validateInterval(0));
+            $this->assertEquals(1.1, $validateInterval('1.1'));
+            $this->assertEquals(3e1, $validateInterval('3e1'));
+        });
+
+        $this->specify(
+            "Non-numeric should throw InvalidArgumentException",
+        function () use ($validateIntervalEx) {
+            $validateIntervalEx('foo');
+            $validateIntervalEx([]);
+            $validateIntervalEx((object)[]);
+            $validateIntervalEx(null);
+        });
+
+        $this->specify(
+            "Negative float should throw InvalidArgumentException",
+        function () use ($validateIntervalEx) {
+            $validateIntervalEx(-1.0);
+        });
+    }
+
     public function testValidateConcurrency()
     {
         $validateConcurrency = self::getMethod('validateConcurrency');
@@ -42,6 +78,12 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
             $validateConcurrencyEx([]);
             $validateConcurrencyEx((object)[]);
             $validateConcurrencyEx(null);
+        });
+
+        $this->specify(
+            "Negative integer should throw InvalidArgumentException",
+        function () use ($validateConcurrencyEx) {
+            $validateConcurrencyEx(-1);
         });
     }
 
