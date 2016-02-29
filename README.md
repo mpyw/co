@@ -160,7 +160,7 @@ Priority:
 
 1. Current scope `yield` option
 2. Parent scope `yield` option
-3. 3rd argument of `Co::wait()`
+3. 2nd argument of `Co::wait()`
 4. Static default
 
 ### Comparison Generator of PHP7.0+ or PHP5.5~5.6
