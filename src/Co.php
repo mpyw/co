@@ -358,7 +358,7 @@ class Co
                 throw new \InvalidArgumentException("The Genertor is already running: #$hash");
             }
             $this->setTree($value, $parent_hash, $keylist);
-            while (self::isGeneratorRunnning($value)) {
+            while (self::isGeneratorRunning($value)) {
                 $current = self::normalize($value->current());
                 // Call recursively
                 $enqueued = $this->initialize($current, $hash);
@@ -464,7 +464,7 @@ class Co
         if (!isset($this->values[$hash])) {
             return;
         }
-        while (self::isGeneratorRunnning($value)) {
+        while (self::isGeneratorRunning($value)) {
             $current = self::normalize($value->current());
             $enqueued = $this->initialize($current, $hash);
             if ($enqueued) { // cURL resource found?
@@ -537,7 +537,7 @@ class Co
      * @param Generator $value
      * @return bool
      */
-    private static function isGeneratorRunnning(\Generator $value)
+    private static function isGeneratorRunning(\Generator $value)
     {
         $value->current();
         return $value->valid() && $value->key() !== self::RETURN_WITH; // yield Co::RETURN_WITH => XX
