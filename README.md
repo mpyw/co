@@ -45,10 +45,11 @@ Install via Composer.
 
 ```sh
 # I only need this library!
-composer require mpyw/co:@dev --no-dev
+composer require mpyw/co:@dev
 
 # I need both this library and utils for testing.
 # composer require mpyw/co:@dev
+# composer install
 ```
 
 And require Composer autoloader in your scripts.
