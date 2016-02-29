@@ -208,4 +208,10 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
         });
     }
 
+    public function testTest()
+    {
+        Co::wait([]);
+        $this->assertEquals(true, true);
+    }
+
 }
