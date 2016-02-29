@@ -3,7 +3,7 @@
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-require __DIR__ . '/client_init.php';
+require __DIR__ . '/client-init.php';
 
 // Wait 7 sec
 print_time();
