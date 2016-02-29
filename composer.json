@@ -37,7 +37,7 @@
     },
     "scripts": {
         "test": [
-            "php vendor/bin/codecept run"
+            "php vendor/bin/codecept run unit --coverage --coverage-xml"
         ]
     },
     "archive": {

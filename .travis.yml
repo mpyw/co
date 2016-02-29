@@ -15,7 +15,7 @@ cache:
     - $HOME/.composer/cache
 
 script:
-  - php vendor/bin/codecept run --coverage --coverage-xml
+  - php vendor/bin/codecept run unit --coverage --coverage-xml
 
 branches:
   only:
