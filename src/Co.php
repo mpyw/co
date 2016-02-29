@@ -371,6 +371,7 @@ class Co
             }
             $value = self::getGeneratorReturn($value);
             // Replace current tree with new value
+            $this->unsetTree($hash);
             return $this->initialize($value, $parent_hash, $keylist);
         }
         // cURL resource
