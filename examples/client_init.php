@@ -27,6 +27,18 @@ function curl_streaming($path, $callback, array $q = array()) {
     return $ch;
 }
 
+// Print elapsed time
+function print_time() {
+    static $start;
+    if (!$start) {
+        $start = microtime(true);
+        echo "【Time】0.0 s\n";
+    } else {
+        $diff = sprintf('%.1f', microtime(true) - $start);
+        echo "【Time】$diff s\n";
+    }
+}
+
 // Just for debugging
 function co_dump() {
     static $reg_values = '@^  \["values":"mpyw\\\\Co\\\\Co":private\]=>\n  array\(\d+?\) {\n(.*?)\n  \}$@ms';
