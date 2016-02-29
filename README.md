@@ -75,8 +75,9 @@ static Co::wait(mixed $value, int $concurrency = null, bool $throw = null) : mix
 #### Arguments
 
 - **`(mixed)`** __*$value*__<br /> Any values to be parallely resolved.
-- **`(int)`** __*$concurrency*__<br /> cURL execution pool size. Default is `6`.
-- **`(bool)`** __*$throw*__<br /> Whether throw `CURLException` on cURL errors. Default is `true`.
+- **`(bool)`** __*$throw*__<br /> Whether throw `CURLException` on cURL errors. **Default is `true`.**
+- **`(float)`** __*$interval*__<br /> `curl_multi_select()` timeout. **Default is `0.5`.**
+- **`(int)`** __*$concurrency*__<br /> cURL execution pool size. **Default is `6`.**
 
 #### Return Values
 
@@ -108,21 +109,24 @@ static Co::async(mixed $value) : mixed
 
 - Throws `CURLException` on Exception-unsafe mode.
 
-### Co::setDefaultConcurrency()<br />Co::getDefaultConcurrency()<br />Co::setDefaultThrow()<br />Co::getDefaultThrow()
+### Co::setDefaultThrow()<br />Co::getDefaultThrow()<br />Co::setDefaultInterval()<br />Co::getDefaultInterval()<br />Co::setDefaultConcurrency()<br />Co::getDefaultConcurrency()
 
 Override or get static default settings.
 
 ```php
-static Co::setDefaultConcurrency(int $concurrency) : null
-static Co::getDefaultConcurrency() : int
 static Co::setDefaultThrow(bool $throw) : null
 static Co::getDefaultThrow() : bool
+static Co::setDefaultInterval(float $interval) : null
+static Co::getDefaultInterval() : float
+static Co::setDefaultConcurrency(int $concurrency) : null
+static Co::getDefaultConcurrency() : int
 ```
 
 #### Arguments
 
-- **`(int)`** __*$concurrency*__
 - **`(bool)`** __*$throw*__
+- **`(float)`** __*$interval*__
+- **`(int)`** __*$concurrency*__
 
 #### Return Value
 

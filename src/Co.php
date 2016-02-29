@@ -33,6 +33,7 @@ class Co
      * Static properties
      */
     private static $default_concurrency = 6;
+    private static $default_interval = 0.5;
     private static $default_throw = true;
     private static $self;
 
@@ -47,6 +48,7 @@ class Co
     private $mh;                          // curl_multi_init()
     private $count = 0;                   // count(curl_multi_add_handle called)
     private $concurrency = 6;             // Limit of TCP connections
+    private $interval = 1.0;              // curl_multi_select() timeout
     private $throw = true;                // Throw CURLExceptions?
     private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
     private $tree = array();              // array<*Stack ID*, mixed>
@@ -56,21 +58,13 @@ class Co
     private $value_to_keylist = array();  // array<*Stack ID*|*cURL ID*, array<mixed>>
 
     /**
-     * Get and set default configurations.
+     * Override or get default settings.
      *
      * @access public
      * @static
      * @param int $concurrency
      * @param bool $throw
      */
-    public static function getDefaultConcurrency()
-    {
-        return self::$default_concurrency;
-    }
-    public static function setDefaultConcurrency($concurrency)
-    {
-        self::$default_concurrency = self::validateConcurrency($concurrency);
-    }
     public static function setDefaultThrow($throw)
     {
         self::$default_throw = (bool)$throw;
@@ -78,6 +72,22 @@ class Co
     public static function getDefaultThrow()
     {
         return self::$default_throw;
+    }
+    public static function setDefaultInterval($interval)
+    {
+        self::$default_interval = self::validateInterval($interval);
+    }
+    public static function getDefaultInterval()
+    {
+        return self::$default_interval;
+    }
+    public static function setDefaultConcurrency($concurrency)
+    {
+        self::$default_concurrency = self::validateConcurrency($concurrency);
+    }
+    public static function getDefaultConcurrency()
+    {
+        return self::$default_concurrency;
     }
 
     /**
@@ -87,21 +97,27 @@ class Co
      * @access public
      * @static
      * @param mixed $value
-     * @param int? $concurrency
      * @param bool? $throw
+     * @param float? $interval
+     * @param int? $concurrency
      * @see self::__construct()
      */
-    public static function wait($value, $concurrency = null, $throw = null)
+    public static function wait($value, $throw = null, $interval = null, $concurrency = null)
     {
-        $concurrency =
-            $concurrency !== null
-            ? self::validateConcurrency($concurrency)
-            : self::$default_concurrency
-        ;
         $throw =
             $throw !== null
             ? (bool)$throw
             : self::$default_throw
+        ;
+        $interval =
+            $interval !== null
+            ? self::validateInterval($interval)
+            : self::$default_interval
+        ;
+        $concurrency =
+            $concurrency !== null
+            ? self::validateConcurrency($concurrency)
+            : self::$default_concurrency
         ;
         // This function call must be atomic.
         try {
@@ -110,7 +126,7 @@ class Co
                     'Co::wait() is already running. Use Co::async() instead.'
                 );
             }
-            self::$self = new self($value, $concurrency, $throw);
+            self::$self = new self($value, $throw, $interval, $concurrency);
             $enqueued = self::$self->initialize($value, 'wait');
             if ($enqueued) {
                 self::$self->run();
@@ -153,15 +169,17 @@ class Co
      *
      * @access private
      * @param mixed $value
-     * @param int $concurrency
      * @param bool $throw
+     * @param float $interval
+     * @param int $concurrency
      * @see self::initialize(), self::run()
      */
-    private function __construct($value, $concurrency, $throw)
+    private function __construct($value, $throw, $interval, $concurrency)
     {
         $this->mh = curl_multi_init();
-        $this->concurrency = $concurrency;
         $this->throw = $throw;
+        $this->interval = $interval;
+        $this->concurrency = $concurrency;
     }
 
     /**
@@ -300,7 +318,7 @@ class Co
     {
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
-            curl_multi_select($this->mh, 1.0); // Wait events.
+            curl_multi_select($this->mh, $this->interval); // Wait events.
             curl_multi_exec($this->mh, $active); // Update resources.
             // NOTE: DO NOT call curl_multi_remove_handle
             //       or curl_multi_add_handle while looping curl_multi_info_read!
@@ -488,6 +506,26 @@ class Co
             $parent->send($next);
             $this->updateGenerator($parent);
         }
+    }
+
+    /**
+     * Validate interval value.
+     *
+     * @access private
+     * @static
+     * @param int|float|string $interval
+     * @return int
+     */
+    private static function validateInterval($interval)
+    {
+        if (!is_numeric($interval)) {
+            throw new \InvalidArgumentException('Interval must be a valid number');
+        }
+        $interval = (float)$interval;
+        if ($interval < 0.0) {
+            throw new \InvalidArgumentException('Interval must be a positive float or 0.0');
+        }
+        return $interval;
     }
 
     /**
