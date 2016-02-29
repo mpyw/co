@@ -509,7 +509,6 @@ class Co
 
     /**
      * Normalize value.
-     * Used for getting a Generator from a Generator function.
      *
      * @access private
      * @static
@@ -520,6 +519,11 @@ class Co
     {
         while ($value instanceof \Closure) {
             $value = $value();
+        }
+        if (self::isArrayLike($value)
+            && !is_array($value)
+            && !$value->valid()) {
+            $value = array();
         }
         return $value;
     }
