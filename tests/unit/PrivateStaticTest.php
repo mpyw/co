@@ -11,7 +11,7 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     private static function getMethod($method_name)
     {
-        $rm = new \ReflectionMethod('mpyw\Co\Co', $method_name);
+        $rm = new \ReflectionMethod(Co::class, $method_name);
         return $rm->getClosure();
     }
 
