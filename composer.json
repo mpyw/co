@@ -33,7 +33,8 @@
         "codeception/codeception": "*",
         "codeception/specify": "*",
         "codeception/verify": "*",
-        "satooshi/php-coveralls": "^1.0"
+        "satooshi/php-coveralls": "^1.0",
+        "mpyw/privator": "~1.0"
     },
     "scripts": {
         "test": [

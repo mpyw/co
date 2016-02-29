@@ -1,6 +1,8 @@
 <?php
 
 use mpyw\Co\Co;
+use mpyw\Privator\Proxy;
+use mpyw\Privator\ProxyException;
 
 /**
  * @requires PHP 7.0
@@ -9,18 +11,16 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     use \Codeception\Specify;
 
-    private static function getMethod($method_name)
+    public function _before()
     {
-        $rm = new \ReflectionMethod(Co::class, $method_name);
-        return $rm->getClosure();
+        $this->Co = Proxy::get(Co::class);
     }
 
     public function testValidateInterval()
     {
-        $validateInterval = self::getMethod('validateInterval');
-        $validateIntervalEx = function ($v) use ($validateInterval) {
+        $validateIntervalEx = function ($v) {
             try {
-                $validateInterval($v);
+                $this->Co::validateInterval($v);
                 $this->assertTrue(false);
             } catch (\InvalidArgumentException $e) {
                 $this->assertTrue(true);
@@ -29,10 +29,10 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
         $this->specify(
             "Numeric should be float",
-        function () use ($validateInterval) {
-            $this->assertEquals(0.0, $validateInterval(0));
-            $this->assertEquals(1.1, $validateInterval('1.1'));
-            $this->assertEquals(3e1, $validateInterval('3e1'));
+        function () {
+            $this->assertEquals(0.0, $this->Co::validateInterval(0));
+            $this->assertEquals(1.1, $this->Co::validateInterval('1.1'));
+            $this->assertEquals(3e1, $this->Co::validateInterval('3e1'));
         });
 
         $this->specify(
@@ -53,10 +53,9 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     public function testValidateConcurrency()
     {
-        $validateConcurrency = self::getMethod('validateConcurrency');
-        $validateConcurrencyEx = function ($v) use ($validateConcurrency) {
+        $validateConcurrencyEx = function ($v) {
             try {
-                $validateConcurrency($v);
+                $this->Co::validateConcurrency($v);
                 $this->assertTrue(false);
             } catch (\InvalidArgumentException $e) {
                 $this->assertTrue(true);
@@ -65,10 +64,10 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
         $this->specify(
             "Numeric should be integer",
-        function () use ($validateConcurrency) {
-            $this->assertEquals(1, $validateConcurrency(1));
-            $this->assertEquals(2, $validateConcurrency('2'));
-            $this->assertEquals(3, $validateConcurrency(3.1));
+        function () {
+            $this->assertEquals(1, $this->Co::validateConcurrency(1));
+            $this->assertEquals(2, $this->Co::validateConcurrency('2'));
+            $this->assertEquals(3, $this->Co::validateConcurrency(3.1));
         });
 
         $this->specify(
@@ -89,38 +88,36 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     public function testNormalize()
     {
-        $normalize = self::getMethod('normalize');
-
         $this->specify(
             "Function should be replace with return value recursively",
-        function () use ($normalize) {
-            $normalized = $normalize(function () { return function () { return 1; }; });
+        function () {
+            $normalized = $this->Co::normalize(
+                function () { return function () { return 1; }; }
+            );
             $this->assertEquals(1, $normalized);
         });
 
         $this->specify(
             "Generator function should be replace with Generator",
-        function () use ($normalize) {
-            $normalized = $normalize(function () { yield 1; });
+        function () {
+            $normalized = $this->Co::normalize(function () { yield 1; });
             $this->assertTrue($normalized instanceof \Generator);
         });
 
         $this->specify(
             "Empty Traversable should be instantly replaced with empty array",
-        function () use ($normalize) {
-            $normalized = $normalize(new \ArrayIterator);
+        function () {
+            $normalized = $this->Co::normalize(new \ArrayIterator);
             $this->assertEquals([], $normalized);
         });
     }
 
     public function testIsGeneratorRunning()
     {
-        $isGeneratorRunning = self::getMethod('isGeneratorRunning');
-
         $this->specify(
             "Finished Generators should be false",
-        function () use ($isGeneratorRunning) {
-            $this->assertFalse($isGeneratorRunning(
+        function () {
+            $this->assertFalse($this->Co::isGeneratorRunning(
                 !($g = (function () { yield 1; return 1; })())
                 ?: $g->next()
                 ?: $g
@@ -129,25 +126,27 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
         $this->specify(
             "Running Generators should be true",
-        function () use ($isGeneratorRunning) {
-            $this->assertTrue($isGeneratorRunning((function () { yield 1; })()));
+        function () {
+            $this->assertTrue($this->Co::isGeneratorRunning(
+                (function () { yield 1; })()
+            ));
         });
 
         $this->specify(
             "Psuedo Generator returns should be false",
-        function () use ($isGeneratorRunning) {
-            $this->assertFalse($isGeneratorRunning((function () { yield Co::RETURN_WITH => 1; })()));
+        function () {
+            $this->assertFalse($this->Co::isGeneratorRunning(
+                (function () { yield Co::RETURN_WITH => 1; })()
+            ));
         });
     }
 
     public function testGetGeneratorReturn()
     {
-        $getGeneratorReturn = self::getMethod('getGeneratorReturn');
-
         $this->specify(
             "Finished Generators should return value",
-        function () use ($getGeneratorReturn) {
-            $this->assertEquals(1, $getGeneratorReturn(
+        function () {
+            $this->assertEquals(1, $this->Co::getGeneratorReturn(
                 !($g = (function () { yield 1; return 1; })())
                 ?: $g->next()
                 ?: $g
@@ -156,15 +155,16 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
         $this->specify(
             "Running Generators should throw LogicException",
-        function () use ($getGeneratorReturn) {
-            $getGeneratorReturn((function () { yield 1; })());
-            $this->assertTrue(false);
+        function () {
+            $this->Co::getGeneratorReturn(
+                (function () { yield 1; })()
+            );
         }, ['throws' => 'LogicException']);
 
         $this->specify(
             "Psuedo Generator returns should be valid",
-        function () use ($getGeneratorReturn) {
-            $this->assertEquals(1, $getGeneratorReturn(
+        function () {
+            $this->assertEquals(1, $this->Co::getGeneratorReturn(
                 (function () { yield Co::RETURN_WITH => 1; })()
             ));
         });
@@ -172,81 +172,79 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
 
     public function testIsCurl()
     {
-        $isCurl = self::getMethod('isCurl');
-
         $this->specify(
             "Check if value is a valid cURL handle",
-        function () use ($isCurl) {
-            $this->assertTrue($isCurl(curl_init()));
-            $this->assertFalse($isCurl(curl_close(curl_init())));
-            $this->assertFalse($isCurl(1));
+        function () {
+            $this->assertTrue($this->Co::isCurl(curl_init()));
+            $this->assertFalse($this->Co::isCurl(curl_close(curl_init())));
+            $this->assertFalse($this->Co::isCurl(1));
         });
     }
 
     public function testIsGenerator()
     {
-        $isGenerator = self::getMethod('isGenerator');
-
         $this->specify(
             "Generators should be true",
-        function () use ($isGenerator) {
-            $this->assertTrue($isGenerator((function () { yield 1; })()));
+        function () {
+            $this->assertTrue($this->Co::isGenerator(
+                (function () { yield 1; })()
+            ));
         });
 
         $this->specify(
             "Generator functions should be false",
-        function () use ($isGenerator) {
-            $this->assertFalse($isGenerator(function () { yield 1; }));
+        function () {
+            $this->assertFalse($this->Co::isGenerator(
+                function () { yield 1; }
+            ));
         });
 
         $this->specify(
             "Arrays and Iterators should be false",
-        function () use ($isGenerator) {
-            $this->assertFalse($isGenerator(new \ArrayIterator));
-            $this->assertFalse($isGenerator([]));
+        function () {
+            $this->assertFalse($this->Co::isGenerator(new \ArrayIterator));
+            $this->assertFalse($this->Co::isGenerator([]));
         });
     }
 
     public function testArrayLike()
     {
-        $isArrayLike = self::getMethod('isArrayLike');
-
         $this->specify(
             "Arrays and Iterators should be judged as ArrayLike",
-        function () use ($isArrayLike) {
-            $this->assertTrue($isArrayLike([]));
-            $this->assertTrue($isArrayLike(new \ArrayIterator));
+        function () {
+            $this->assertTrue($this->Co::isArrayLike([]));
+            $this->assertTrue($this->Co::isArrayLike(new \ArrayIterator));
         });
 
         $this->specify(
             "Generator should be judged as NOT ArrayLike",
-        function () use ($isArrayLike) {
-            $this->assertFalse($isArrayLike((function () { yield 1; })()));
+        function () {
+            $this->assertFalse($this->Co::isArrayLike(
+                (function () { yield 1; })()
+            ));
         });
     }
 
     public function testFlatten()
     {
-        $flatten = self::getMethod('flatten');
-
         $this->specify("Nested array should be flattened",
-        function () use ($flatten) {
+        function () {
             $from = [[['a', ['b'], [[['c', 'foo' => 'd']]]]]];
             $to = ['a', 'b', 'c', 'd'];
-            $this->assertEquals($to, $flatten($from));
+            $this->assertEquals($to, $this->Co::flatten($from));
         });
 
         $this->specify(
             "Arrays and Iterators should be flattened as Arrays, " .
             "but Generators should be ignored",
-        function () use ($flatten) {
+        function () {
             $gen = (function () { yield 1; })();
             $from = [
                 new \RecursiveArrayIterator(['foo' => 1, [$gen], 2]),
                 new \ArrayIterator([3, ['bar' => $gen], 4]),
             ];
             $to = [1, $gen, 2, 3, $gen, 4];
-            $this->assertEquals($to, $flatten($from));
+            $this->assertEquals($to, $this->Co::flatten($from));
         });
     }
 
