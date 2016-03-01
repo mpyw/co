@@ -79,9 +79,9 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 
 | Key | Default | Description |
 |:---:|:---:|:---|
-| `throw` | **`true`** | Whether throw `CURLException` on cURL errors. |
-| `pipeline` | **`false`** | Whether use HTTP/1.1 pipelining.<br />PHP 5.5+, libcurl 7.16.0+ are required. |
-| `multiplex` | **`true`** | Whether use HTTP/2 multiplexing.<br />PHP 5.5+ `--with-nghttp2`, libcurl 7.43.0+ are required. |
+| `throw` | **`true`** | Whether to throw `CURLException` on cURL errors. |
+| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />PHP 5.5+, libcurl 7.16.0+ are required. |
+| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP 5.5+ `--with-nghttp2`, libcurl 7.43.0+ are required. |
 | `interval` | **`0.5`** | `curl_multi_select()` timeout seconds.<br />All events are observed in this span. |
 | `concurrency` | **`6`** | cURL execution pool size.<br />Larger value will be recommended if you use pipelining or multiplexing. |
 
