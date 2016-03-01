@@ -1,6 +1,6 @@
 # Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master)
 
-Asynchronous cURL executor simply based on resource and Generator.
+Asynchronous cURL executor simply based on resource and Generator
 
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
@@ -37,17 +37,17 @@ var_dump(Co::wait([
 ]));
 ```
 
-Those requests are executed as asynchronous as it can :smile:
+The requests are executed as asynchronously as possible :smile:
 
 ## Installing
 
 Install via Composer.
 
 ```sh
-# I only need this library!
+# I only need the library!
 composer require mpyw/co:@dev
 
-# I need both this library and utils for testing.
+# I need both the library and utils for testing.
 # composer require mpyw/co:@dev
 # composer install
 ```
@@ -65,8 +65,8 @@ use mpyw\Co\CURLException;
 
 ### Co::wait()
 
-Wait all cURL requests to be completed.  
-Options override static defaults.
+Wait for all the cURL requests to complete.  
+The options will override static defaults.
 
 ```php
 static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $concurrency = null) : mixed
@@ -81,7 +81,7 @@ static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $c
 
 #### Return Values
 
-**`(mixed)`**<br />Resolved values. It may contains `CURLException` on Exception-safe mode.
+**`(mixed)`**<br />Resolved values; it may contain `CURLException` within Exception-safe mode.
 
 #### Exception
 
@@ -90,7 +90,7 @@ static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $c
 ### Co::async()
 
 Parallel execution along with `Co::wait()`, **without waiting**.
-Options are inherited from `Co::wait()`.  
+The options are inherited from `Co::wait()`.  
 <ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
 
 ```php
@@ -99,7 +99,7 @@ static Co::async(mixed $value) : mixed
 
 #### Arguments
 
-- **`(mixed)`** __*$value*__<br /> Any values to be parallely resolved.
+- **`(mixed)`** __*$value*__<br /> Any values to be parallelly resolved.
 
 #### Return Values
 
@@ -107,11 +107,11 @@ static Co::async(mixed $value) : mixed
 
 #### Exception
 
-- Throws `CURLException` on Exception-unsafe mode.
+- Throws `CURLException` within Exception-unsafe mode.
 
 ### Co::setDefaultThrow()<br />Co::getDefaultThrow()<br />Co::setDefaultInterval()<br />Co::getDefaultInterval()<br />Co::setDefaultConcurrency()<br />Co::getDefaultConcurrency()
 
-Override or get static default settings.
+Overrides/gets static default settings.
 
 ```php
 static Co::setDefaultThrow(bool $throw) : null
@@ -136,9 +136,9 @@ Omitted
 
 ### Conversion on resolving
 
-All values are resolved by the following rules.  
-Yielded values are also sent into the Generator.  
-The rules are applied recursively.
+The all values are resolved by the following rules.  
+Yielded values are also sent to the Generator.  
+The rules will be applied recursively.
 
 | Before | After |
 |:---:|:----:|
@@ -163,7 +163,7 @@ Priority:
 3. 2nd argument of `Co::wait()`
 4. Static default
 
-### Comparison Generator of PHP7.0+ or PHP5.5~5.6
+### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
 
 #### `return` Statements
 
@@ -183,7 +183,7 @@ yield $bar;
 yield Co::RETURN_WITH => $baz;
 ```
 
-Although experimently aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,  
+Although experimental aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,  
 **`Co::RETURN_WITH`** is recommended in terms of readability.
 
 #### `yield` Statements with assignment
