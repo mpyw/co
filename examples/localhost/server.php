@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 set_time_limit(0);
 declare(ticks = 1);
 pcntl_signal(SIGCHLD, "signal_handler");

@@ -16,11 +16,11 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
         $this->Co = Proxy::get(Co::class);
     }
 
-    public function testValidateInterval()
+    public function testValidateOptions()
     {
-        $validateIntervalEx = function ($v) {
+        $validateOptionsEx = function ($v) {
             try {
-                $this->Co::validateInterval($v);
+                $this->Co::validateOptions($v);
                 $this->assertTrue(false);
             } catch (\InvalidArgumentException $e) {
                 $this->assertTrue(true);
@@ -28,61 +28,33 @@ class PrivateStaticTest extends \Codeception\TestCase\Test {
         };
 
         $this->specify(
-            "Numeric should be float",
-        function () {
-            $this->assertEquals(0.0, $this->Co::validateInterval(0));
-            $this->assertEquals(1.1, $this->Co::validateInterval('1.1'));
-            $this->assertEquals(3e1, $this->Co::validateInterval('3e1'));
+            "Interval validation",
+        function () use ($validateOptionsEx) {
+            $this->assertEquals(1.4, $this->Co::validateOptions(['interval' => '1.4'])['interval']);
+            $this->assertEquals(2, $this->Co::validateOptions(['interval' => '2'])['interval']);
+            $this->assertEquals(0.0, $this->Co::validateOptions(['interval' => 0])['interval']);
+            $this->assertEquals(0.2, $this->Co::validateOptions(['interval' => '2e-1'])['interval']);
+            $validateOptionsEx(['interval' => -1.0]);
+            $validateOptionsEx(['interval' => '2e2e']);
         });
 
         $this->specify(
-            "Non-numeric should throw InvalidArgumentException",
-        function () use ($validateIntervalEx) {
-            $validateIntervalEx('foo');
-            $validateIntervalEx([]);
-            $validateIntervalEx((object)[]);
-            $validateIntervalEx(null);
+            "Concurrency validation",
+        function () use ($validateOptionsEx) {
+            $this->assertEquals(1, $this->Co::validateOptions(['concurrency' => 1.0])['concurrency']);
+            $this->assertEquals(2, $this->Co::validateOptions(['concurrency' => '2'])['concurrency']);
+            $this->assertEquals(0, $this->Co::validateOptions(['concurrency' => 0])['concurrency']);
+            $validateOptionsEx(['concurrency' => '1.0']);
+            $validateOptionsEx(['concurrency' => -1]);
         });
 
         $this->specify(
-            "Negative float should throw InvalidArgumentException",
-        function () use ($validateIntervalEx) {
-            $validateIntervalEx(-1.0);
-        });
-    }
-
-    public function testValidateConcurrency()
-    {
-        $validateConcurrencyEx = function ($v) {
-            try {
-                $this->Co::validateConcurrency($v);
-                $this->assertTrue(false);
-            } catch (\InvalidArgumentException $e) {
-                $this->assertTrue(true);
-            }
-        };
-
-        $this->specify(
-            "Numeric should be integer",
-        function () {
-            $this->assertEquals(1, $this->Co::validateConcurrency(1));
-            $this->assertEquals(2, $this->Co::validateConcurrency('2'));
-            $this->assertEquals(3, $this->Co::validateConcurrency(3.1));
-        });
-
-        $this->specify(
-            "Non-numeric should throw InvalidArgumentException",
-        function () use ($validateConcurrencyEx) {
-            $validateConcurrencyEx('foo');
-            $validateConcurrencyEx([]);
-            $validateConcurrencyEx((object)[]);
-            $validateConcurrencyEx(null);
-        });
-
-        $this->specify(
-            "Negative integer should throw InvalidArgumentException",
-        function () use ($validateConcurrencyEx) {
-            $validateConcurrencyEx(-1);
+            "Boolean validation",
+        function () use ($validateOptionsEx) {
+            $this->assertEquals(true, $this->Co::validateOptions(['throw' => true])['throw']);
+            $this->assertEquals(false, $this->Co::validateOptions(['pipeline' => 'off'])['pipeline']);
+            $this->assertEquals(true, $this->Co::validateOptions(['multiplex' => 'yes'])['multiplex']);
+            $validateOptionsEx(['throw' => 'ok']);
         });
     }
 

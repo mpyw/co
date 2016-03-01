@@ -28,7 +28,7 @@ class PrivateTest extends \Codeception\TestCase\Test {
             return \curl_multi_add_handle(...$args);
         });
 
-        $this->co = self::$Co::new([true, 0.5, 6]);
+        $this->co = self::$Co::new([self::$Co::getStatic('defaults')]);
 
         $this->specify('Count and queue should be initialized with empty value',
         function () {
@@ -47,7 +47,7 @@ class PrivateTest extends \Codeception\TestCase\Test {
                 $this->co->enqueue($curl);
             }, ['throws' => 'InvalidArgumentException']);
 
-            for ($i = 1; $i < $this->co->concurrency; ++$i) {
+            for ($i = 1; $i < $this->co->options['concurrency']; ++$i) {
                 $curl = curl_init();
                 $this->co->enqueue($curl);
                 $this->assertEquals($i + 1, $this->co->count);
@@ -74,11 +74,18 @@ class PrivateTest extends \Codeception\TestCase\Test {
             }
 
         });
-
     }
 
     public function testSetTree()
     {
+        $this->co = self::$Co::new([self::$Co::getStatic('defaults')]);
+
+        $this->specify('Count and queue should be initialized with empty value',
+        function () {
+            $this->assertEquals(0, $this->co->count);
+            $this->assertEquals([], $this->co->queue);
+        });
+
     }
 
     public function testUnsetTree()

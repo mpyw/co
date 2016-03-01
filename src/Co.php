@@ -30,11 +30,19 @@ class Co
     const SAFE = '__SAFE__';
 
     /**
-     * Static properties
+     * Static default options.
      */
-    private static $default_concurrency = 6;
-    private static $default_interval = 0.5;
-    private static $default_throw = true;
+    private static $defaults = array(
+        'throw' => true, // Throw CURLExceptions?
+        'pipeline' => false, // Use HTTP/1.1 pipelining?
+        'multiplex' => true, // Use HTTP/2 multiplexing?
+        'interval' => 0.5, // curl_multi_select() timeout
+        'concurrency' => 6, // Limit of TCP connections
+    );
+
+    /**
+     * Execution instance is stored here.
+     */
     private static $self;
 
     /**
@@ -45,11 +53,9 @@ class Co
      *   - "wait" (Co::wait calls)
      *   - "async" (Co::async calls)
      */
+    private $options = array();
     private $mh;                          // curl_multi_init()
     private $count = 0;                   // count(curl_multi_add_handle called)
-    private $concurrency = 6;             // Limit of TCP connections
-    private $interval = 1.0;              // curl_multi_select() timeout
-    private $throw = true;                // Throw CURLExceptions?
     private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
     private $tree = array();              // array<*Stack ID*, mixed>
     private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource<cURL>>
@@ -62,63 +68,32 @@ class Co
      *
      * @access public
      * @static
-     * @param int $concurrency
-     * @param bool $throw
+     * @param array<string, mixed> $options
      */
-    public static function setDefaultThrow($throw)
+    public static function setDefaultOptions(array $options)
     {
-        self::$default_throw = (bool)$throw;
+        self::$defaults = self::validateOptions($options);
     }
-    public static function getDefaultThrow()
+    public static function getDefaultOptions()
     {
-        return self::$default_throw;
-    }
-    public static function setDefaultInterval($interval)
-    {
-        self::$default_interval = self::validateInterval($interval);
-    }
-    public static function getDefaultInterval()
-    {
-        return self::$default_interval;
-    }
-    public static function setDefaultConcurrency($concurrency)
-    {
-        self::$default_concurrency = self::validateConcurrency($concurrency);
-    }
-    public static function getDefaultConcurrency()
-    {
-        return self::$default_concurrency;
+        return self::$defaults;
     }
 
     /**
      * Wait all cURL requests to be completed.
      * Options override static defaults.
      *
+     *
      * @access public
      * @static
      * @param mixed $value
-     * @param bool? $throw
-     * @param float? $interval
-     * @param int? $concurrency
+     * @param array<string, mixed> $options
      * @see self::__construct()
      */
-    public static function wait($value, $throw = null, $interval = null, $concurrency = null)
+    public static function wait($value, array $options = array())
     {
-        $throw =
-            $throw !== null
-            ? (bool)$throw
-            : self::$default_throw
-        ;
-        $interval =
-            $interval !== null
-            ? self::validateInterval($interval)
-            : self::$default_interval
-        ;
-        $concurrency =
-            $concurrency !== null
-            ? self::validateConcurrency($concurrency)
-            : self::$default_concurrency
-        ;
+
+        $options = self::validateOptions($options) + self::$defaults;
         // This function call must be atomic.
         try {
             if (self::$self) {
@@ -126,7 +101,7 @@ class Co
                     'Co::wait() is already running. Use Co::async() instead.'
                 );
             }
-            self::$self = new self($throw, $interval, $concurrency);
+            self::$self = new self($options);
             $enqueued = self::$self->initialize($value, 'wait');
             if ($enqueued) {
                 self::$self->run();
@@ -168,17 +143,17 @@ class Co
      * Internal constructor.
      *
      * @access private
-     * @param bool $throw
-     * @param float $interval
-     * @param int $concurrency
+     * @param array<string, mixed> $options
      * @see self::initialize(), self::run()
      */
-    private function __construct($throw, $interval, $concurrency)
+    private function __construct(array $options)
     {
         $this->mh = curl_multi_init();
-        $this->throw = $throw;
-        $this->interval = $interval;
-        $this->concurrency = $concurrency;
+        if (function_exists('curl_multi_setopt')) {
+            $flags = ($options['pipeline'] ? 1 : 0) | ($options['multiplex'] ? 2 : 0);
+            curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
+        }
+        $this->options = $options;
     }
 
     /**
@@ -189,12 +164,11 @@ class Co
      */
     private function enqueue($curl)
     {
-        if ($this->count < $this->concurrency) {
+        if (!$this->options['concurrency'] || $this->count < $this->options['concurrency']) {
             // If within concurrency limit...
             if (CURLM_OK !== $errno = curl_multi_add_handle($this->mh, $curl)) {
                 $msg = curl_multi_strerror($errno) . ": $curl";
-                $CURLM_ADDED_ALREADY = defined('CURLM_ADDED_ALREADY') ? CURLM_ADDED_ALREADY : 7;
-                if ($errno === $CURLM_ADDED_ALREADY || $errno === CURLE_FAILED_INIT) {
+                if ($errno === 7 || $errno === CURLE_FAILED_INIT) {
                     // These errors are caused by users mistake.
                     throw new \InvalidArgumentException($msg);
                 } else {
@@ -318,7 +292,7 @@ class Co
     {
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
-            curl_multi_select($this->mh, $this->interval); // Wait events.
+            curl_multi_select($this->mh, $this->options['interval']); // Wait events.
             curl_multi_exec($this->mh, $active); // Update resources.
             // NOTE: DO NOT call curl_multi_remove_handle
             //       or curl_multi_add_handle while looping curl_multi_info_read!
@@ -433,7 +407,7 @@ class Co
             $this->unsetTree($hash); // No more needed
             $parent->throw($result);
             $this->updateGenerator($parent);
-        } elseif ($errno !== CURLE_OK && !$parent && $this->throw) { // Error and is to be thrown globally?
+        } elseif ($errno !== CURLE_OK && !$parent && $this->options['throw']) { // Error and is to be thrown globally?
             $this->unsetTree($hash); // No more needed
             throw $result;
         } elseif ($parent_hash === 'async') { // Co::async() complete?
@@ -465,7 +439,7 @@ class Co
             }
             $parent_hash = $this->value_to_parent[spl_object_hash($value)];
             if (!isset($this->values[$parent_hash])) {
-                return $this->throw;
+                return $this->options['throw'];
             }
             $value = $this->values[$parent_hash];
         }
@@ -509,43 +483,39 @@ class Co
     }
 
     /**
-     * Validate interval value.
+     * Validate options.
      *
      * @access private
      * @static
-     * @param int|float|string $interval
-     * @return int
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
      */
-    private static function validateInterval($interval)
+    private static function validateOptions($options)
     {
-        if (!is_numeric($interval)) {
-            throw new \InvalidArgumentException('Interval must be a valid number');
+        foreach ($options as $key => $value) {
+            if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, array(
+                    'flags' => FILTER_NULL_ON_FAILURE,
+                ));
+                if ($value === null) {
+                    throw new \InvalidArgumentException("Option[$key] must be boolean.");
+                }
+            } elseif ($key === 'interval') {
+                $value = filter_var($value, FILTER_VALIDATE_FLOAT);
+                if ($value === false || $value < 0.0) {
+                    throw new \InvalidArgumentException("Option[interval] must be positive float or zero.");
+                }
+            } elseif ($key === 'concurrency') {
+                $value = filter_var($value, FILTER_VALIDATE_INT);
+                if ($value === false || $value < 0) {
+                    throw new \InvalidArgumentException("Option[concurrency] must be positive integer or zero.");
+                }
+            } else {
+                throw new \InvalidArgumentException("Unknown option: $key");
+            }
+            $options[$key] = $value;
         }
-        $interval = (float)$interval;
-        if ($interval < 0.0) {
-            throw new \InvalidArgumentException('Interval must be a positive float or 0.0');
-        }
-        return $interval;
-    }
-
-    /**
-     * Validate concurrency value.
-     *
-     * @access private
-     * @static
-     * @param int|float|string $concurrency
-     * @return int
-     */
-    private static function validateConcurrency($concurrency)
-    {
-        if (!is_numeric($concurrency)) {
-            throw new \InvalidArgumentException('Concurrency must be a valid number');
-        }
-        $concurrency = (int)$concurrency;
-        if ($concurrency <= 0) {
-            throw new \InvalidArgumentException('Concurrency must be a positive integer');
-        }
-        return $concurrency;
+        return $options;
     }
 
     /**

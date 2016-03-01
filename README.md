@@ -69,17 +69,23 @@ Wait for all the cURL requests to complete.
 The options will override static defaults.
 
 ```php
-static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $concurrency = null) : mixed
+static Co::wait(mixed $value, array $options = array()) : mixed
 ```
 
 #### Arguments
 
 - **`(mixed)`** __*$value*__<br /> Any values to be parallelly resolved.
-- **`(bool)`** __*$throw*__<br /> Whether throw `CURLException` on cURL errors. **Default is `true`.**
-- **`(float)`** __*$interval*__<br /> `curl_multi_select()` timeout. **Default is `0.5`.**
-- **`(int)`** __*$concurrency*__<br /> cURL execution pool size. **Default is `6`.**
+- **`(array<string, mixed>)`** __*$options*__<br /> Associative array of options.
 
-#### Return Values
+| Key | Default | Description |
+|:---:|:---:|:---|
+| `throw` | **`true`** | Whether throw `CURLException` on cURL errors. |
+| `pipeline` | **`false`** | Whether use HTTP/1.1 pipelining.<br />PHP 5.5+, libcurl 7.16.0+ are required. |
+| `multiplex` | **`true`** | Whether use HTTP/2 multiplexing.<br />PHP 5.5+ `--with-nghttp2`, libcurl 7.43.0+ are required. |
+| `interval` | **`0.5`** | `curl_multi_select()` timeout seconds.<br />All events are observed in this span. |
+| `concurrency` | **`6`** | cURL execution pool size.<br />Larger value will be recommended if you use pipelining or multiplexing. |
+
+#### Return Value
 
 **`(mixed)`**<br />Resolved values; it may contain `CURLException` within Exception-safe mode.
 
@@ -101,7 +107,7 @@ static Co::async(mixed $value) : mixed
 
 - **`(mixed)`** __*$value*__<br /> Any values to be parallelly resolved.
 
-#### Return Values
+#### Return Value
 
 **`(null)`**
 
@@ -114,23 +120,9 @@ static Co::async(mixed $value) : mixed
 Overrides/gets static default settings.
 
 ```php
-static Co::setDefaultThrow(bool $throw) : null
-static Co::getDefaultThrow() : bool
-static Co::setDefaultInterval(float $interval) : null
-static Co::getDefaultInterval() : float
-static Co::setDefaultConcurrency(int $concurrency) : null
-static Co::getDefaultConcurrency() : int
+static Co::setDefaultOptions(array<string, mixed>) : null
+static Co::getDefaultOptions() : array<string, mixed>
 ```
-
-#### Arguments
-
-- **`(bool)`** __*$throw*__
-- **`(float)`** __*$interval*__
-- **`(int)`** __*$concurrency*__
-
-#### Return Value
-
-Omitted
 
 ## Rules
 
@@ -152,20 +144,20 @@ The rules will be applied recursively.
 The following `yield` statements can specify Exception-safe or Exception-unsafe.
 
 ```php
-yield CO::SAFE => $value
-yield CO::UNSAFE => $value
+yield Co::SAFE => $value
+yield Co::UNSAFE => $value
 ```
 
-Priority:
+Option priority:
 
-1. Current scope `yield` option
-2. Parent scope `yield` option
-3. 2nd argument of `Co::wait()`
-4. Static default
+1. `yield` in current scope
+2. `yield` in parent scope
+3. `throw` in `Co::wait()` options
+4. `throw` in static default options
 
 ### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
 
-#### `return` Statements
+#### `return` statements
 
 PHP7.0+:
 
@@ -186,7 +178,7 @@ yield Co::RETURN_WITH => $baz;
 Although experimental aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,  
 **`Co::RETURN_WITH`** is recommended in terms of readability.
 
-#### `yield` Statements with assignment
+#### `yield` statements with assignment
 
 PHP7.0+:
 
@@ -206,4 +198,3 @@ echo (yield $bar);
 
 - Tests
 - Fix bugs
-- Fix broken examples
