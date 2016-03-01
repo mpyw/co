@@ -1,4 +1,4 @@
-# Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master)
+# Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/mpyw/co/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/mpyw/co/?branch=master)
 
 Asynchronous cURL executor simply based on resource and Generator
 
