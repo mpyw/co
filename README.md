@@ -115,7 +115,7 @@ static Co::async(mixed $value) : mixed
 
 - Throws `CURLException` within Exception-unsafe mode.
 
-### Co::setDefaultThrow()<br />Co::getDefaultThrow()<br />Co::setDefaultInterval()<br />Co::getDefaultInterval()<br />Co::setDefaultConcurrency()<br />Co::getDefaultConcurrency()
+### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
 Overrides/gets static default settings.
 
