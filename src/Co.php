@@ -239,11 +239,6 @@ class Co
         $this->value_to_parent[$hash] = $parent_hash;
         $this->value_to_children[$parent_hash][$hash] = true;
         $this->value_to_keylist[$hash] = $keylist;
-        $parent =
-            isset($this->values[$parent_hash]) // Is in Generator stack?
-            ? $this->values[$parent_hash]
-            : null
-        ;
     }
 
     /**
@@ -255,14 +250,9 @@ class Co
     private function unsetTable($hash)
     {
         $parent_hash = $this->value_to_parent[$hash];
-        $parent =
-            isset($this->values[$parent_hash])
-            ? $this->values[$parent_hash]
-            : null
-        ;
         // Clear self table.
-        if (isset($this->queues[$hash])) {
-            unset($this->queues[$hash]);
+        if (isset($this->queue[$hash])) {
+            unset($this->queue[$hash]);
         }
         unset($this->values[$hash]);
         unset($this->value_to_parent[$hash]);
@@ -368,7 +358,6 @@ class Co
         }
         // cURL resource
         if (self::isCurl($value)) {
-            $hash = (string)$value;
             $this->enqueue($value);
             $this->setTree($value, $parent_hash, $keylist);
             $this->setTable($value, $parent_hash, $keylist);
