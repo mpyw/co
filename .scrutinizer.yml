@@ -1,0 +1,23 @@
+filter:
+  excluded_paths:
+    - tests/*
+    - examples/*
+    - vendor/*
+
+build:
+
+  environment:
+    php: '7.0.0'
+
+  dependencies:
+    before:
+      - 'composer install'
+      - './vendor/bin/codecept build'
+
+  tests:
+    override:
+      -
+        command: 'php vendor/bin/codecept run unit --coverage --coverage-xml'
+        coverage:
+          file: 'tests/_output/coverage.xml'
+          format: 'php-clover'

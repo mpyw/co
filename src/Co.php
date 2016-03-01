@@ -490,7 +490,7 @@ class Co
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
-    private static function validateOptions($options)
+    private static function validateOptions(array $options)
     {
         foreach ($options as $key => $value) {
             if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
@@ -624,7 +624,7 @@ class Co
      * @param array &$carry
      * @return array<mixed>
      */
-    private static function flatten($value, &$carry = array())
+    private static function flatten($value, array &$carry = array())
     {
         if (!self::isArrayLike($value)) {
             $carry[] = $value;
