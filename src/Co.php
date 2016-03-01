@@ -126,7 +126,7 @@ class Co
                     'Co::wait() is already running. Use Co::async() instead.'
                 );
             }
-            self::$self = new self($value, $throw, $interval, $concurrency);
+            self::$self = new self($throw, $interval, $concurrency);
             $enqueued = self::$self->initialize($value, 'wait');
             if ($enqueued) {
                 self::$self->run();
@@ -168,13 +168,12 @@ class Co
      * Internal constructor.
      *
      * @access private
-     * @param mixed $value
      * @param bool $throw
      * @param float $interval
      * @param int $concurrency
      * @see self::initialize(), self::run()
      */
-    private function __construct($value, $throw, $interval, $concurrency)
+    private function __construct($throw, $interval, $concurrency)
     {
         $this->mh = curl_multi_init();
         $this->throw = $throw;
