@@ -89,7 +89,7 @@ static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $c
 
 ### Co::async()
 
-Parallel execution along with `Co::wait()`, **without waiting**.
+Execute cURL requests along with `Co::wait()` calling, **without waiting** resolved values.  
 The options are inherited from `Co::wait()`.  
 <ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
 
