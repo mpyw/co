@@ -37,7 +37,7 @@ var_dump(Co::wait([
 ]));
 ```
 
-The requests are executed as asynchronously as possible :smile:
+The requests are executed as parallelly as possible :smile:
 
 ## Installing
 
@@ -74,7 +74,7 @@ static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $c
 
 #### Arguments
 
-- **`(mixed)`** __*$value*__<br /> Any values to be parallely resolved.
+- **`(mixed)`** __*$value*__<br /> Any values to be parallelly resolved.
 - **`(bool)`** __*$throw*__<br /> Whether throw `CURLException` on cURL errors. **Default is `true`.**
 - **`(float)`** __*$interval*__<br /> `curl_multi_select()` timeout. **Default is `0.5`.**
 - **`(int)`** __*$concurrency*__<br /> cURL execution pool size. **Default is `6`.**
@@ -89,7 +89,7 @@ static Co::wait(mixed $value, bool $throw = null, float $interval = null, int $c
 
 ### Co::async()
 
-Execute cURL requests along with `Co::wait()` calling, **without waiting** resolved values.  
+Execute cURL requests along with `Co::wait()` call, **without waiting** resolved values.  
 The options are inherited from `Co::wait()`.  
 <ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
 
