@@ -193,7 +193,8 @@ class Co
             // If within concurrency limit...
             if (CURLM_OK !== $errno = curl_multi_add_handle($this->mh, $curl)) {
                 $msg = curl_multi_strerror($errno) . ": $curl";
-                if ($errno === CURLM_BAD_HANDLE || $errno === CURLM_BAD_EASY_HANDLE) {
+                $CURLM_ADDED_ALREADY = defined('CURLM_ADDED_ALREADY') ? CURLM_ADDED_ALREADY : 7;
+                if ($errno === $CURLM_ADDED_ALREADY || $errno === CURLE_FAILED_INIT) {
                     // These errors are caused by users mistake.
                     throw new \InvalidArgumentException($msg);
                 } else {
