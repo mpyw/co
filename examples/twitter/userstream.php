@@ -2,7 +2,7 @@
 
 use mpyw\Co\Co;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/plain; charset=UTF-8', true, 400);
     echo 'This script is only for php-cli.';
