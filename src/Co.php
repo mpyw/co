@@ -58,7 +58,7 @@ class Co
     private $count = 0;                   // count(curl_multi_add_handle called)
     private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
     private $tree = array();              // array<*Stack ID*, mixed>
-    private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource<cURL>>
+    private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource>
     private $value_to_parent = array();   // array<*Stack ID*|*cURL ID*, *Stack ID*>
     private $value_to_children = array(); // array<*Stack ID*, array<*Stack ID*|*cURL ID*, true>>
     private $value_to_keylist = array();  // array<*Stack ID*|*cURL ID*, array<mixed>>
@@ -68,7 +68,7 @@ class Co
      *
      * @access public
      * @static
-     * @param array<string, mixed> $options
+     * @param array $options
      */
     public static function setDefaultOptions(array $options)
     {
@@ -83,11 +83,10 @@ class Co
      * Wait all cURL requests to be completed.
      * Options override static defaults.
      *
-     *
      * @access public
      * @static
      * @param mixed $value
-     * @param array<string, mixed> $options
+     * @param array $options
      * @see self::__construct()
      */
     public static function wait($value, array $options = array())
@@ -143,7 +142,7 @@ class Co
      * Internal constructor.
      *
      * @access private
-     * @param array<string, mixed> $options
+     * @param array $options
      * @see self::initialize(), self::run()
      */
     private function __construct(array $options)
@@ -160,7 +159,7 @@ class Co
      * Call curl_multi_add_handle or push into waiting queue.
      *
      * @access private
-     * @param resource<cURL> $curl
+     * @param resource $curl
      */
     private function enqueue($curl)
     {
@@ -191,8 +190,8 @@ class Co
      *
      * @access private
      * @param mixed $value mixed
-     * @param string $parent_hash      *Stack ID*
-     * @param array<string>? $keylist  Queue of keys for its hierarchy.
+     * @param string $parent_hash *Stack ID*
+     * @param array $keylist Queue of keys for its hierarchy.
      */
     private function setTree($value, $parent_hash, array $keylist = array())
     {
@@ -228,9 +227,9 @@ class Co
      * Set table of dependencies.
      *
      * @access private
-     * @param Generator|resource<cURL> $value
-     * @param string $parent_hash              *Stack ID* or *cURL ID*
-     * @param array? $keylist                  Queue of keys for its hierarchy.
+     * @param Generator|resource $value
+     * @param string $parent_hash *Stack ID* or *cURL ID*
+     * @param array $keylist Queue of keys for its hierarchy.
      */
     private function setTable($value, $parent_hash, array $keylist = array())
     {
@@ -315,7 +314,7 @@ class Co
      * @access private
      * @param mixed $value
      * @param string $parent_hash  *Stack ID* or *cURL ID*
-     * @param array? $keylist      Queue of keys for its hierarchy.
+     * @param array $keylist       Queue of keys for its hierarchy.
      * @return bool                Enqueued?
      */
     private function initialize($value, $parent_hash, array $keylist = array())
@@ -372,7 +371,7 @@ class Co
      * Update tree with cURL result.
      *
      * @access private
-     * @param resource<cURL> $value
+     * @param resource $value
      * @param int $errno
      * @see self::updateGenerator()
      */
@@ -476,8 +475,8 @@ class Co
      *
      * @access private
      * @static
-     * @param array<string, mixed> $options
-     * @return array<string, mixed>
+     * @param array $options
+     * @return array
      */
     private static function validateOptions(array $options)
     {
@@ -610,8 +609,7 @@ class Co
      * @access private
      * @static
      * @param mixed $value
-     * @param array &$carry
-     * @return array<mixed>
+     * @return array
      */
     private static function flatten($value, array &$carry = array())
     {

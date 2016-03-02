@@ -20,7 +20,7 @@ class CURLException extends \RuntimeException
      * @access public
      * @param string $message
      * @param int $code
-     * @param resource<cURL> $handle
+     * @param resource $handle
      */
     public function __construct($message, $code, $handle)
     {
@@ -32,7 +32,7 @@ class CURLException extends \RuntimeException
      * Get cURL handle.
      *
      * @access public
-     * @return resource<cURL> $handle
+     * @return resource $handle
      */
     public function getHandle()
     {
