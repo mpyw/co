@@ -78,18 +78,43 @@ class PrivateTest extends \Codeception\TestCase\Test {
 
     public function testSetTree()
     {
-        $this->co = self::$Co::new([self::$Co::getStatic('defaults')]);
-
-        $this->specify('Count and queue should be initialized with empty value',
+        $this->specify('Values to the nested positions should be correctly set',
         function () {
-            $this->assertEquals(0, $this->co->count);
-            $this->assertEquals([], $this->co->queue);
+            $co = self::$Co::new([self::$Co::getStatic('defaults')]);
+            $gen = (function () { yield 1; })();
+            $co->tree = ['wait' => ['a', $gen, ['b', 'c'], 'd']];
+            $co->setTree('e', 'wait', [4, 0]);
+            $co->setTree('f', 'wait', [4, 'foo']);
+            $co->setTree('Generator was replaced', 'wait', [1, 3, 2, 0]);
+            $this->assertEquals(
+                ['a', [3 => [2 => ['Generator was replaced']]], ['b', 'c'], 'd', ['e', 'foo' => 'f']],
+                $co->tree['wait']
+            );
         });
-
     }
 
     public function testUnsetTree()
     {
+        $this->specify('Specified generator stack should be disposed, including decsendants',
+        function () {
+            $co = self::$Co::new([self::$Co::getStatic('defaults')]);
+            $genfunc = function () { yield 1; };
+            $gen1 = $genfunc(); $hash1 = spl_object_hash($gen1);
+            $gen2 = $genfunc(); $hash2 = spl_object_hash($gen2);
+            $gen3 = $genfunc(); $hash3 = spl_object_hash($gen3);
+            $gen4 = $genfunc(); $hash4 = spl_object_hash($gen4);
+            $co->tree = [
+                'wait' => ['a', $gen1],
+                $hash1 => ['b', [$gen2, $gen3]],
+                $hash2 => 'c',
+                $hash3 => [['foo' => $gen4]],
+                $hash4 => 'd',
+            ];
+            $co->unsetTree($hash3);
+            $this->assertEquals(['wait', $hash1, $hash2], array_keys($co->tree));
+            $co->unsetTree($hash1);
+            $this->assertEquals(['wait'], array_keys($co->tree));
+        });
     }
 
     public function testSetTable()
