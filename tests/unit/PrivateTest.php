@@ -85,9 +85,9 @@ class PrivateTest extends \Codeception\TestCase\Test {
             $co->tree = ['wait' => ['a', $gen, ['b', 'c'], 'd']];
             $co->setTree('e', 'wait', [4, 0]);
             $co->setTree('f', 'wait', [4, 'foo']);
-            $co->setTree('Generator was replaced', 'wait', [1, 3, 2, 0]);
+            $co->setTree('Generator was replaced', 'wait', [1, 3, 0]);
             $this->assertEquals(
-                ['a', [3 => [2 => ['Generator was replaced']]], ['b', 'c'], 'd', ['e', 'foo' => 'f']],
+                ['a', [3 => ['Generator was replaced']], ['b', 'c'], 'd', ['e', 'foo' => 'f']],
                 $co->tree['wait']
             );
         });
@@ -119,6 +119,29 @@ class PrivateTest extends \Codeception\TestCase\Test {
 
     public function testSetTable()
     {
+        $this->specify('Maps for Generators should be correctly built',
+        function () {
+            $co = self::$Co::new([self::$Co::getStatic('defaults')]);
+            $gen = (function () { yield 1; })();
+            $hash = spl_object_hash($gen);
+            $co->setTable($gen, 'wait', [0, 0]);
+            $this->assertEquals($gen, $co->values[$hash]);
+            $this->assertEquals('wait', $co->value_to_parent[$hash]);
+            $this->assertTrue($co->value_to_children['wait'][$hash]);
+            $this->assertEquals([0, 0], $co->value_to_keylist[$hash]);
+        });
+
+        $this->specify('Maps for cURL resources should be correctly built',
+        function () {
+            $co = self::$Co::new([self::$Co::getStatic('defaults')]);
+            $curl = curl_init();
+            $hash = (string)$curl;
+            $co->setTable($curl, 'wait', [0, 0]);
+            $this->assertEquals($curl, $co->values[$hash]);
+            $this->assertEquals('wait', $co->value_to_parent[$hash]);
+            $this->assertTrue($co->value_to_children['wait'][$hash]);
+            $this->assertEquals([0, 0], $co->value_to_keylist[$hash]);
+        });
     }
 
     public function testUnsetTable()
