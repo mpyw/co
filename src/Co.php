@@ -91,7 +91,6 @@ class Co
      */
     public static function wait($value, array $options = array())
     {
-
         $options = self::validateOptions($options) + self::$defaults;
         // This function call must be atomic.
         try {
@@ -101,20 +100,15 @@ class Co
                 );
             }
             self::$self = new self($options);
-            $enqueued = self::$self->initialize($value, 'wait');
-            if ($enqueued) {
+            if (self::$self->initialize($value, 'wait')) {
                 self::$self->run();
             }
             $result = self::$self->tree['wait'];
             self::$self = null;
             return $result;
-        } catch (\Throwable $e) { // for PHP 7+
-            self::$self = null;
-            throw $e;
-        } catch (\Exception $e) { // for PHP 5
-            self::$self = null;
-            throw $e;
-        }
+        } catch (\Throwable $e) { } catch (\Exception $e) { } // For both PHP7+ and PHP5
+        self::$self = null;
+        throw $e;
     }
 
     /**
@@ -167,13 +161,11 @@ class Co
             // If within concurrency limit...
             if (CURLM_OK !== $errno = curl_multi_add_handle($this->mh, $curl)) {
                 $msg = curl_multi_strerror($errno) . ": $curl";
-                if ($errno === 7 || $errno === CURLE_FAILED_INIT) {
-                    // These errors are caused by users mistake.
-                    throw new \InvalidArgumentException($msg);
-                } else {
-                    // These errors are by internal reason.
-                    throw new \RuntimeException($msg);
-                }
+                $class = $errno === 7 || $errno === CURLE_FAILED_INIT
+                    ? 'InvalidArgumentException'
+                    : 'RuntimeException'
+                ;
+                throw new $class($msg);
             }
             ++$this->count;
         } else {
@@ -250,9 +242,7 @@ class Co
     {
         $parent_hash = $this->value_to_parent[$hash];
         // Clear self table.
-        if (isset($this->queue[$hash])) {
-            unset($this->queue[$hash]);
-        }
+        unset($this->queue[$hash]);
         unset($this->values[$hash]);
         unset($this->value_to_parent[$hash]);
         unset($this->value_to_keylist[$hash]);
