@@ -374,6 +374,7 @@ class Co
             }
             return $this->initialize($normalized, $parent_hash, $keylist);
         } catch (\RuntimeException $value) {
+            $this->setTree($value, $parent_hash, $keylist);
             $this->throwIfCan($parent_hash, $value);
             return $this->initialize($value, $parent_hash, $keylist);
         }
@@ -419,12 +420,10 @@ class Co
                 return;
             }
         } catch (\RuntimeException $e) {
+            $this->unsetTree($parent_hash);
             while (true) {
-                $this->unsetTree($parent_hash);
-                if ($parent_hash === 'async' || $parent_hash === 'wait') {
-                    throw $e;
-                }
                 $hash = $parent_hash;
+                $this->unsetTree($hash);
                 if ($hash === 'async' || $hash === 'wait') {
                     throw $e;
                 }

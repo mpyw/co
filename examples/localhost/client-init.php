@@ -58,7 +58,7 @@ function co_dump() {
     echo $dumped;
 }
 
-// Unwrap Exception Message
+// Unwrap Exception message
 function unwrap($value) {
     if (is_array($value)) {
         return array_map(__FUNCTION__, $value);
