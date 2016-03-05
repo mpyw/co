@@ -421,10 +421,13 @@ class Co
         } catch (\RuntimeException $e) {
             while (true) {
                 $this->unsetTree($parent_hash);
-                if ($parent_hash === 'async' && $parent_hash === 'wait') {
+                if ($parent_hash === 'async' || $parent_hash === 'wait') {
                     throw $e;
                 }
                 $hash = $parent_hash;
+                if ($hash === 'async' || $hash === 'wait') {
+                    throw $e;
+                }
                 $parent_hash = $this->value_to_parent[$hash];
                 $parent = isset($this->values[$parent_hash]) ? $this->values[$parent_hash] : null; // Generator or null
                 $keylist = $this->value_to_keylist[$hash];
