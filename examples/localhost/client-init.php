@@ -68,5 +68,5 @@ function unwrap($value) {
     }
     $class = get_class($value);
     $message = $value->getMessage();
-    return "$class: $message"; 
+    return "$class: $message";
 }

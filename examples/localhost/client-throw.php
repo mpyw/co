@@ -31,6 +31,6 @@ $result = unwrap(Co::wait([curl('/rest', ['id' => 1, 'sleep' => 2]), function ()
         }
     ]));
     print_time();
-}], ['interval' => 0.05]));
+}], ['interval' => 0]));
 print_r($result);
 print_time();
