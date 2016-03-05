@@ -24,13 +24,13 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 7]), function () {
         },
         function () {
             // Wait 0 sec
-            echo (yield CO::SAFE => curl_init('invaild'))->getMessage(), "\n";
+            echo unwrap(yield CO::SAFE => curl('/invalid')), "\n";
             print_time();
             try {
                 // Wait 0 sec
-                yield curl_init('invalid');
+                yield curl('/invalid');
             } catch (CURLException $e) {
-                echo $e->getMessage(), "\n";
+                echo unwrap($e), "\n";
                 print_time();
             }
             return ['x' => ['y' => function () {

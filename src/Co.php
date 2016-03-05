@@ -309,7 +309,6 @@ class Co
      */
     private function initialize($value, $parent_hash, array $keylist = array())
     {
-        $value = self::normalize($value);
         // Array or Traversable
         if (self::isArrayLike($value)) {
             $this->setTree($value, $parent_hash, $keylist);
@@ -329,32 +328,55 @@ class Co
                 throw new \InvalidArgumentException("The Genertor is already running: #$hash");
             }
             $this->setTree($value, $parent_hash, $keylist);
-            while (self::isGeneratorRunning($value)) {
-                $current = self::normalize($value->current());
-                // Call recursively
-                $enqueued = $this->initialize($current, $hash);
-                if ($enqueued) { // If cURL resource found?
-                    $this->setTable($value, $parent_hash, $keylist);
-                    return true;
+            $this->setTable($value, $parent_hash, $keylist);
+            try {
+                while (self::isGeneratorRunning($value)) {
+                    // Call recursively
+                    $current = $value->current();
+                    $enqueued = $this->initialize($current, $hash);
+                    if ($enqueued) { // If cURL resource found?
+                        $this->setTable($value, $parent_hash, $keylist);
+                        return true;
+                    }
+                    // Search more...
+                    $value->send($current);
                 }
-                // Search more...
-                $value->send($current);
+                $value = self::getGeneratorReturn($value);
+            } catch (\RuntimeException $value) {
+                $this->throwIfCan($parent_hash, $value);
             }
-            $value = self::getGeneratorReturn($value);
-            // Replace current tree with new value
             $this->unsetTree($hash);
+            $this->unsetTable($hash);
+            // Replace current tree with new value
             return $this->initialize($value, $parent_hash, $keylist);
         }
         // cURL resource
         if (self::isCurl($value)) {
-            $this->enqueue($value);
-            $this->setTree($value, $parent_hash, $keylist);
-            $this->setTable($value, $parent_hash, $keylist);
-            return true;
+            $hash = (string)$value;
+            try {
+                $this->enqueue($value);
+                $this->setTree($value, $parent_hash, $keylist);
+                $this->setTable($value, $parent_hash, $keylist);
+                return true;
+            } catch (\RuntimeException $value) {
+                $this->unsetTree($hash);
+                $this->unsetTable($hash);
+                $this->throwIfCan($parent_hash, $value);
+                return $this->initialize($value, $parent_hash, $keylist);
+            }
         }
         // Other
-        $this->setTree($value, $parent_hash, $keylist);
-        return false;
+        try {
+            $normalized = self::normalize($value);
+            if ($normalized === $value) {
+                $this->setTree($value, $parent_hash, $keylist);
+                return false;
+            }
+            return $this->initialize($normalized, $parent_hash, $keylist);
+        } catch (\RuntimeException $value) {
+            $this->throwIfCan($parent_hash, $value);
+            return $this->initialize($value, $parent_hash, $keylist);
+        }
     }
 
     /**
@@ -381,20 +403,47 @@ class Co
         ;
         $this->setTree($result, $parent_hash, $keylist);
         $this->unsetTable($hash);
-        if ($errno !== CURLE_OK && $parent && $this->canThrow($parent)) {// Error and is to be thrown into Generator?
-            $this->unsetTree($hash); // No more needed
-            $parent->throw($result);
-            $this->updateGenerator($parent);
-        } elseif ($errno !== CURLE_OK && !$parent && $this->options['throw']) { // Error and is to be thrown globally?
-            $this->unsetTree($hash); // No more needed
-            throw $result;
-        } elseif ($parent_hash === 'async') { // Co::async() complete?
-            $this->unsetTree($hash); // No more needed
-        } elseif ($parent && !$this->value_to_children[$parent_hash]) { // Generator complete?
-            $this->unsetTree($hash); // No more needed
-            $result = $this->tree[$parent_hash];
-            $parent->send($result);
-            $this->updateGenerator($parent);
+        try {
+            if ($errno !== CURLE_OK && $this->throwIfCan($parent_hash, $result)) {
+                $this->unsetTree($parent_hash);
+                return $this->updateGenerator($parent);
+            }
+            if ($parent && !$this->value_to_children[$parent_hash]) {
+                $result = $this->tree[$parent_hash];
+                $this->unsetTree($parent_hash);
+                $parent->send($result);
+                return $this->updateGenerator($parent);
+            }
+            if ($parent_hash === 'async') {
+                $this->unsetTree($parent_hash);
+                return;
+            }
+        } catch (\RuntimeException $e) {
+            while (true) {
+                $this->unsetTree($parent_hash);
+                if ($parent_hash === 'async' && $parent_hash === 'wait') {
+                    throw $e;
+                }
+                $hash = $parent_hash;
+                $parent_hash = $this->value_to_parent[$hash];
+                $parent = isset($this->values[$parent_hash]) ? $this->values[$parent_hash] : null; // Generator or null
+                $keylist = $this->value_to_keylist[$hash];
+                $this->setTree($e, $parent_hash, $keylist);
+                $this->unsetTable($hash);
+                try {
+                    if ($this->throwIfCan($parent_hash, $e)) {
+                        $this->unsetTree($parent_hash);
+                        return $this->updateGenerator($parent);
+                    }
+                    if ($parent && !$this->value_to_children[$parent_hash]) {
+                        $result = $this->tree[$parent_hash];
+                        $this->unsetTree($parent_hash);
+                        $parent->send($result);
+                        return $this->updateGenerator($parent);
+                    }
+                    break;
+                } catch (\RuntimeException $e) { }
+            }
         }
     }
 
@@ -405,21 +454,18 @@ class Co
      * @param Generator $value
      * @return bool
      */
-    private function canThrow(\Generator $value)
+    private function throwIfCan($hash, \RuntimeException $e)
     {
-        while (true) {
-            $key = $value->key();
-            if ($key === self::SAFE) {
-                return false;
-            }
-            if ($key === self::UNSAFE) {
-                return true;
-            }
-            $parent_hash = $this->value_to_parent[spl_object_hash($value)];
-            if (!isset($this->values[$parent_hash])) {
-                return $this->options['throw'];
-            }
-            $value = $this->values[$parent_hash];
+        $value = isset($this->values[$hash]) ? $this->values[$hash] : null;
+        if ($value && $value->key() === self::SAFE) {
+            return false;
+        }
+        if ($value and $value->key() === self::UNSAFE || $this->options['throw']) {
+            $value->throw($e);
+            return true;
+        }
+        if ($this->options['throw']) {
+            throw $e;
         }
     }
 

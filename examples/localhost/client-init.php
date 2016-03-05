@@ -10,6 +10,7 @@ function curl($path, array $q = array()) {
         CURLOPT_URL => "http://localhost:8080$path?" . http_build_query($q, '', '&'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
+        CURLOPT_FAILONERROR => true,
     ));
     return $ch;
 }
@@ -55,4 +56,17 @@ function co_dump() {
         }
     }
     echo $dumped;
+}
+
+// Unwrap Exception Message
+function unwrap($value) {
+    if (is_array($value)) {
+        return array_map(__FUNCTION__, $value);
+    }
+    if (!$value instanceof \RuntimeException) {
+        return $value;
+    }
+    $class = get_class($value);
+    $message = $value->getMessage();
+    return "$class: $message"; 
 }
