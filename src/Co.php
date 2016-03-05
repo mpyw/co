@@ -54,10 +54,9 @@ class Co
      *   - "async" (Co::async calls)
      */
     private $options = array();
-    private $mh;                          // curl_multi_init()
-    private $count = 0;                   // count(curl_multi_add_handle called)
-    private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
     private $tree = array();              // array<*Stack ID*, mixed>
+    private $pool;
+
     private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource>
     private $value_to_parent = array();   // array<*Stack ID*|*cURL ID*, *Stack ID*>
     private $value_to_children = array(); // array<*Stack ID*, array<*Stack ID*|*cURL ID*, true>>
@@ -150,34 +149,6 @@ class Co
     }
 
     /**
-     * Call curl_multi_add_handle or push into waiting queue.
-     *
-     * @access private
-     * @param resource $curl
-     */
-    private function enqueue($curl)
-    {
-        if (!$this->options['concurrency'] || $this->count < $this->options['concurrency']) {
-            // If within concurrency limit...
-            if (CURLM_OK !== $errno = curl_multi_add_handle($this->mh, $curl)) {
-                $msg = curl_multi_strerror($errno) . ": $curl";
-                $class = $errno === 7 || $errno === CURLE_FAILED_INIT
-                    ? 'InvalidArgumentException'
-                    : 'RuntimeException'
-                ;
-                throw new $class($msg);
-            }
-            ++$this->count;
-        } else {
-            // Else...
-            if (isset($this->queue[(string)$curl])) {
-                throw new \InvalidArgumentException("The cURL resource is already enqueued: $curl");
-            }
-            $this->queue[(string)$curl] = $curl;
-        }
-    }
-
-    /**
      * Set or overwrite tree of return values.
      *
      * @access private
@@ -258,43 +229,6 @@ class Co
         // Clear reference from ancestor table.
         if (isset($this->value_to_children[$parent_hash][$hash])) {
             unset($this->value_to_children[$parent_hash][$hash]);
-        }
-    }
-
-    /**
-     * Run curl_multi_exec() loop.
-     *
-     * @access private
-     * @see self::updateCurl(), self::enqueue()
-     */
-    private function run()
-    {
-        curl_multi_exec($this->mh, $active); // Start requests.
-        do {
-            curl_multi_select($this->mh, $this->options['interval']); // Wait events.
-            curl_multi_exec($this->mh, $active); // Update resources.
-            // NOTE: DO NOT call curl_multi_remove_handle
-            //       or curl_multi_add_handle while looping curl_multi_info_read!
-            $entries = array();
-            do if ($entry = curl_multi_info_read($this->mh, $remains)) {
-                $entries[] = $entry;
-            } while ($remains);
-            // Remove done and consume queue.
-            foreach ($entries as $entry) {
-                curl_multi_remove_handle($this->mh, $entry['handle']);
-                --$this->count;
-                if ($curl = array_shift($this->queue)) {
-                    $this->enqueue($curl);
-                }
-            }
-            // Update cURL and Generator stacks.
-            foreach ($entries as $entry) {
-                $this->updateCurl($entry['handle'], $entry['result']);
-            }
-        } while ($this->count > 0 || $this->queue);
-        // All request must be done when reached here.
-        if ($active) {
-            throw new \LogicException('Unreachable statement.');
         }
     }
 
@@ -506,159 +440,6 @@ class Co
             $parent->send($next);
             $this->updateGenerator($parent);
         }
-    }
-
-    /**
-     * Validate options.
-     *
-     * @access private
-     * @static
-     * @param array $options
-     * @return array
-     */
-    private static function validateOptions(array $options)
-    {
-        foreach ($options as $key => $value) {
-            if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
-                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, array(
-                    'flags' => FILTER_NULL_ON_FAILURE,
-                ));
-                if ($value === null) {
-                    throw new \InvalidArgumentException("Option[$key] must be boolean.");
-                }
-            } elseif ($key === 'interval') {
-                $value = filter_var($value, FILTER_VALIDATE_FLOAT);
-                if ($value === false || $value < 0.0) {
-                    throw new \InvalidArgumentException("Option[interval] must be positive float or zero.");
-                }
-            } elseif ($key === 'concurrency') {
-                $value = filter_var($value, FILTER_VALIDATE_INT);
-                if ($value === false || $value < 0) {
-                    throw new \InvalidArgumentException("Option[concurrency] must be positive integer or zero.");
-                }
-            } else {
-                throw new \InvalidArgumentException("Unknown option: $key");
-            }
-            $options[$key] = $value;
-        }
-        return $options;
-    }
-
-    /**
-     * Normalize value.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return miexed
-     */
-    private static function normalize($value)
-    {
-        while ($value instanceof \Closure) {
-            $value = $value();
-        }
-        if (self::isArrayLike($value)
-            && !is_array($value)
-            && !$value->valid()) {
-            $value = array();
-        }
-        return $value;
-    }
-
-    /**
-     * Check if a Generator is running.
-     * This method supports psuedo return with Co::RETURN_WITH.
-     *
-     * @access private
-     * @static
-     * @param Generator $value
-     * @return bool
-     */
-    private static function isGeneratorRunning(\Generator $value)
-    {
-        $value->current();
-        return $value->valid() && $value->key() !== self::RETURN_WITH; // yield Co::RETURN_WITH => XX
-    }
-
-    /**
-     * Get return value from a Generator.
-     * This method supports psuedo return with Co::RETURN_WITH.
-     *
-     * @access private
-     * @static
-     * @param Generator $value
-     * @return bool
-     */
-    private static function getGeneratorReturn(\Generator $value)
-    {
-        $value->current();
-        if ($value->valid() && $value->key() === self::RETURN_WITH) {  // yield Co::RETURN_WITH => XX
-            return $value->current();
-        }
-        if ($value->valid()) {
-            throw new \LogicException('Unreachable statement.');
-        }
-        return method_exists($value, 'getReturn') ? $value->getReturn() : null;
-    }
-
-    /**
-     * Check if value is a valid cURL resource.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isCurl($value)
-    {
-        return is_resource($value) && get_resource_type($value) === 'curl';
-    }
-
-    /**
-     * Check if value is a valid Generator.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isGenerator($value)
-    {
-        return $value instanceof \Generator;
-    }
-
-    /**
-     * Check if value is a valid array or Traversable, not a Generator.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isArrayLike($value)
-    {
-        return $value instanceof \Traversable && !$value instanceof \Generator
-               || is_array($value);
-    }
-
-    /**
-     * Flatten an array or a Traversable.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return array
-     */
-    private static function flatten($value, array &$carry = array())
-    {
-        if (!self::isArrayLike($value)) {
-            $carry[] = $value;
-        } else {
-            foreach ($value as $v) {
-                self::flatten($v, $carry);
-            }
-        }
-        return func_num_args() <= 1 ? $carry : null;
     }
 
 }
