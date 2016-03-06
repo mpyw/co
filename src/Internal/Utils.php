@@ -13,7 +13,7 @@ class Utils {
      * @param array $options
      * @return array
      */
-    private static function validateOptions(array $options)
+    public static function validateOptions(array $options)
     {
         foreach ($options as $key => $value) {
             if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
@@ -49,7 +49,7 @@ class Utils {
      * @param mixed $value
      * @return miexed
      */
-    private static function normalize($value)
+    public static function normalize($value)
     {
         while ($value instanceof \Closure) {
             $value = $value();
@@ -70,7 +70,7 @@ class Utils {
      * @param mixed $value
      * @return bool
      */
-    private static function isCurl($value)
+    public static function isCurl($value)
     {
         return is_resource($value) && get_resource_type($value) === 'curl';
     }
@@ -83,7 +83,7 @@ class Utils {
      * @param mixed $value
      * @return bool
      */
-    private static function isGenerator($value)
+    public static function isGenerator($value)
     {
         return $value instanceof \Generator;
     }
@@ -96,7 +96,7 @@ class Utils {
      * @param mixed $value
      * @return bool
      */
-    private static function isArrayLike($value)
+    public static function isArrayLike($value)
     {
         return $value instanceof \Traversable && !$value instanceof \Generator
                || is_array($value);

@@ -1,6 +1,7 @@
 <?php
 
 namespace mpyw\Co;
+use mpyw\Co\Internal\Utils;
 
 /**
  * Asynchronous cURL executor simply based on resource and Generator.
@@ -57,11 +58,6 @@ class Co
     private $tree = array();              // array<*Stack ID*, mixed>
     private $pool;
 
-    private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource>
-    private $value_to_parent = array();   // array<*Stack ID*|*cURL ID*, *Stack ID*>
-    private $value_to_children = array(); // array<*Stack ID*, array<*Stack ID*|*cURL ID*, true>>
-    private $value_to_keylist = array();  // array<*Stack ID*|*cURL ID*, array<mixed>>
-
     /**
      * Override or get default settings.
      *
@@ -71,7 +67,7 @@ class Co
      */
     public static function setDefaultOptions(array $options)
     {
-        self::$defaults = self::validateOptions($options);
+        self::$defaults = Utils::validateOptions($options);
     }
     public static function getDefaultOptions()
     {
@@ -90,7 +86,7 @@ class Co
      */
     public static function wait($value, array $options = array())
     {
-        $options = self::validateOptions($options) + self::$defaults;
+        $options = Utils::validateOptions($options) + self::$defaults;
         // This function call must be atomic.
         try {
             if (self::$self) {

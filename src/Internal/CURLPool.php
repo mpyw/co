@@ -71,7 +71,9 @@ class CURLPool {
             curl_multi_select($this->mh, $this->co->options['interval']); // Wait events.
             curl_multi_exec($this->mh, $callstack);
             foreach ($this->readEntries() as $entry) {
-                $callback = $this->parents[(string)$entry['handle']];
+                $key = (string)$entry['handle'];
+                $callback = $this->parents[$key];
+                unset($this->parents[$key]);
                 $callback($entry['handle'], $entry['result']);
             }
         } while ($this->count > 0 || $this->queue);
@@ -91,7 +93,8 @@ class CURLPool {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             --$this->count;
             if ($this->queue) {
-                $this->enqueue(array_shift($this->queue));
+                $ch = array_shift($this->queue);
+                $this->enqueue($ch, $this->parents[(string)$ch]);
             }
         }
         return $entries;
