@@ -8,12 +8,7 @@ class Dispatcher
      * Event subscribers.
      * @var array
      */
-    private static $subscribers = array();
-
-    /**
-     * Dummy constructor.
-     */
-    private function __construct() { }
+    private $subscribers = [];
 
     /**
      * Dispatch callback for the event.
@@ -21,10 +16,10 @@ class Dispatcher
      * @param  Closure $callback
      * @param  bool    $once
      */
-    public static function dispatch($event, \Closure $callback, $once = false)
+    public function dispatch($event, \Closure $callback, $once = false)
     {
         $hash = spl_object_hash($callback);
-        self::$subscribers[$event][$hash] = [
+        $this->subscribers[$event][$hash] = [
             'callback' => $callback,
             'once' => $once,
         ];
@@ -35,9 +30,9 @@ class Dispatcher
      * @param  string  $event
      * @param  Closure $callback
      */
-    public static function dispatchOnce($event, \Closure $callback)
+    public function dispatchOnce($event, \Closure $callback)
     {
-        self::dispatch($event, $callback, true);
+        $this->dispatch($event, $callback, true);
     }
 
     /**
@@ -45,32 +40,32 @@ class Dispatcher
      * @param  string  $event
      * @param  Closure $callback
      */
-    public static function remove($event, \Closure $callback)
+    public function remove($event, \Closure $callback)
     {
         $hash = spl_object_hash($callback);
-        if (isset(self::$subscribers[$event][$callback])) {
-            unset(self::$subscribers[$event][$callback]);
+        if (isset($this->subscribers[$event][$callback])) {
+            unset($this->subscribers[$event][$callback]);
         }
-        if (empty(self::$subscribers[$event])) {
-            unset(self::$subscribers[$event]);
+        if (empty($this->subscribers[$event])) {
+            unset($this->subscribers[$event]);
         }
     }
 
     /**
      * Notify the event to callbacks.
      * @param  string  $event
-     * @param  mixed   $event,... Arguments.
+     * @param  mixed   ...$args  Arguments.
      */
-    public static function notify($event)
+    public function notify($event, ...$args)
     {
-        $args = array_slice(func_get_args(), 1);
-        if (empty(self::$subscribers[$event])) {
+        if (empty($this->subscribers[$event])) {
             return;
         }
-        foreach (self::$subscribers[$event] as $setting) {
-            call_user_func_array($setting['callback'], $args);
+        foreach ($this->subscribers[$event] as $setting) {
+            $callback = $setting['callback'];
+            $callback(...$args);
             if ($setting['once']) {
-                self::remove($event, $callback);
+                $this->remove($event, $callback);
             }
         }
     }

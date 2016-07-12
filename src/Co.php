@@ -4,7 +4,8 @@ namespace mpyw\Co;
 use mpyw\Co\Internal\Utils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
-use mpyw\Co\Internal\
+use mpyw\Co\Internal\CURLPool;
+use mpyw\Co\Internal\Dispatcher;
 
 class Co implements CoInterface
 {
@@ -13,6 +14,18 @@ class Co implements CoInterface
      * @var [type]
      */
     private static $self;
+
+    /**
+     * [$pool description]
+     * @var CURLPool
+     */
+    private $pool;
+
+    /**
+     *
+     * @var mixed
+     */
+    private $tree;
 
     /**
      * [setDefaultOptions description]
@@ -34,7 +47,6 @@ class Co implements CoInterface
 
     public static function wait($value, array $options = array())
     {
-        $options = new CoOptions($options);
         // This function call must be atomic.
         try {
             if (self::$self) {
@@ -43,7 +55,7 @@ class Co implements CoInterface
                 );
             }
             self::$self = new self($options);
-            if (self::$self->initialize($value, 'wait')) {
+            if (self::$self->initializeWait($value)) {
                 self::$self->run();
             }
             $result = self::$self->tree['wait'];
@@ -62,12 +74,31 @@ class Co implements CoInterface
                 'This method is mainly expected to be used in CURLOPT_WRITEFUNCTION callback.'
             );
         }
-        self::$self->initialize($value, 'async');
+        self::$self->initializeAsync($value);
     }
 
-    private function initialize()
+    public function __construct(array $options)
     {
-        $
+        $this->pool = new CURLPool(new CoOption($options));
+    }
+
+    private function initializeWait()
+    {
+
+    }
+
+    private function initialize($value)
+    {
+        $value = self::normalize($value);
+        if (self::isCurl($value)) {
+            Dispatcher::dispatch('curl_completed-' . $value, function () {
+                $this->
+            });
+            $this->pool->enqueue($value);
+        } elseif (self::isGenerator($value)) {
+
+
+        }
     }
 
 }

@@ -3,12 +3,19 @@
 namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
 use mpyw\Co\Internal\Dispatcher;
+use mpyw\Co\Internal\CoOption;
 
 class CURLPool
 {
     /**
+     * Dispatcher.
+     * @var Dispatcher
+     */
+    private $dispatcher;
+
+    /**
      * Options.
-     * @var array
+     * @var CoOption
      */
     private $options;
 
@@ -33,19 +40,16 @@ class CURLPool
     /**
      * Constructor.
      * Initialize cURL multi handle.
-     * @param array $options
+     * @param Dispatcher $dispacher
+     * @param CoOption $options
      */
-    public function __construct(array $options)
+    public function __construct(Dispatcher $dispacher, CoOption $options)
     {
+        $this->dispacher = $dispatcher;
         $this->options = $options;
         $this->mh = curl_multi_init();
-        if (function_exists('curl_multi_setopt')) {
-            $flags =
-                ($this->options['pipeline'] ? 1 : 0)
-                | ($this->options['multiplex'] ? 2 : 0)
-            ;
-            curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
-        }
+        $flags = (int)$options['pipeline'] + (int)$options['multiplex'] * 2;
+        curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
     }
 
     /**
@@ -59,19 +63,14 @@ class CURLPool
                 throw new \InvalidArgumentException("The cURL resource is already enqueued: $ch");
             }
             $this->queue[(string)$ch] = $ch;
-            Dispatcher::notify('curl_enqueued-' . (string)$ch);
         } else {
             $errno = curl_multi_add_handle($this->mh, $ch);
             if ($errno !== CURLM_OK) {
                 $msg = curl_multi_strerror($errno) . ": $ch";
-                $class = $errno === 7 || $errno === CURLE_FAILED_INIT
-                    ? 'InvalidArgumentException'
-                    : 'RuntimeException'
-                ;
+                $class = $errno === 7 ? 'InvalidArgumentException' : 'RuntimeException';
                 throw new $class($msg);
             }
             ++$this->count;
-            Dispatcher::notify('curl_added-' . (string)$ch);
         }
     }
 
@@ -85,7 +84,7 @@ class CURLPool
             curl_multi_select($this->mh, $this->options['interval']); // Wait events.
             curl_multi_exec($this->mh, $active);
             foreach ($this->readEntries() as $entry) {
-                Dispatcher::notify('curl_complete-' . $entry['handle'], $entry['handle'], $entry['result']);
+                $this->dispatcher->notify('curl_completed-' . $entry['handle'], $entry['handle'], $entry['result']);
                 if ($this->queue) {
                     $ch = array_shift($this->queue);
                     $this->enqueue($ch);
@@ -104,7 +103,7 @@ class CURLPool
      */
     private function readEntries()
     {
-        $entries = array();
+        $entries = [];
         while ($entry = curl_multi_info_read($this->mh)) {
             $entries[] = $entry;
         }

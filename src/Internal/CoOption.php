@@ -6,27 +6,27 @@ class CoOption implements \ArrayAccess
 {
     /**
      * Field types.
-     * @var array
+     * @const array
      */
-    private static $types = array(
+    const TYPES = [
         'throw' => 'Bool', // Throw CURLExceptions?
         'pipeline' => 'Bool', // Use HTTP/1.1 pipelining?
         'multiplex' => 'Bool', // Use HTTP/2 multiplexing?
         'interval' => 'NaturalFloat', // curl_multi_select() timeout
         'concurrency' => 'NaturalInt', // Limit of TCP connections
-    );
+    ];
 
     /**
      * Default values.
      * @var array
      */
-    private static $defaults = array(
+    private static $defaults = [
         'throw' => true,
         'pipeline' => false,
         'multiplex' => true,
         'interval' => 0.5,
         'concurrency' => 6,
-    );
+    ];
 
     /**
      * Actual values.
@@ -40,7 +40,7 @@ class CoOption implements \ArrayAccess
      */
     public static function setDefaultOptions(array $options)
     {
-        self::$defaults = self::validateOptions($options);
+        self::$defaults = self::validateOptions($options) + self::$defaults;
     }
 
     /**
@@ -113,10 +113,10 @@ class CoOption implements \ArrayAccess
     private static function validateOptions(array $options)
     {
         foreach ($options as $key => $value) {
-            if (!isset(self::$types[$key])) {
+            if (!isset(self::TYPES[$key])) {
                 throw new \InvalidArgumentException("Unknown option: $key");
             }
-            $validator = [__CLASS__, 'validate' . $types[$key]];
+            $validator = [__CLASS__, 'validate' . self::TYPES[$key]];
             $options[$key] = $validator($key, $value);
         }
         return $options;
@@ -131,9 +131,9 @@ class CoOption implements \ArrayAccess
      */
     private static function validateBool($key, $value)
     {
-        $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, array(
+        $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, [
             'flags' => FILTER_NULL_ON_FAILURE,
-        ));
+        ]);
         if ($value === null) {
             throw new \InvalidArgumentException("Option[$key] must be boolean.");
         }

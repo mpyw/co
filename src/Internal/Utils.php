@@ -1,7 +1,7 @@
 <?php
 
-namespace mpyw\Co\Utils;
-use mpyw\Co\Co;
+namespace mpyw\Co;
+use mpyw\Co\Internal\GeneratorContainer;
 
 class Utils {
 
@@ -15,8 +15,15 @@ class Utils {
         while ($value instanceof \Closure) {
             $value = $value();
         }
-        if (self::isArrayLike($value) && !is_array($value)) {
-            $value = iterator_to_array($value);
+        if ($value instanceof \Generator) {
+            return new GeneratorContainer($value);
+        }
+        if (self::isArrayLike($value)) {
+            $tmp = [];
+            foreach ($value as $k => $v) {
+                $tmp[$k] = self::normalize($value);
+            }
+            return $tmp;
         }
         return $value;
     }
@@ -36,9 +43,9 @@ class Utils {
      * @param mixed $value
      * @return bool
      */
-    public static function isGenerator($value)
+    public static function isGeneratorContainer($value)
     {
-        return $value instanceof \Generator;
+        return $value instanceof GeneratorContainer;
     }
 
     /**
@@ -48,25 +55,10 @@ class Utils {
      */
     public static function isArrayLike($value)
     {
-        return $value instanceof \Traversable && !$value instanceof \Generator
-               || is_array($value);
-    }
-
-    /**
-     * Flatten an array or a Traversable.
-     * @param mixed $value
-     * @return array
-     */
-    public static function flatten($value, array &$carry = array())
-    {
-        if (!self::isArrayLike($value)) {
-            $carry[] = $value;
-        } else {
-            foreach ($value as $v) {
-                self::flatten($v, $carry);
-            }
-        }
-        return func_num_args() <= 1 ? $carry : null;
+        return
+            $value instanceof \Traversable
+            && !$value instanceof \Generator
+            || is_array($value);
     }
 
 }
