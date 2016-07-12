@@ -1,11 +1,8 @@
 <?php
 
 namespace mpyw\Co\Internal;
-use mpyw\Co\Co;
+use mpyw\Co\CoInterface;
 
-/**
- * Generator Container class.
- */
 class GeneratorContainer
 {
     /**
@@ -53,7 +50,7 @@ class GeneratorContainer
     {
         try {
             $this->g->current();
-            return $this->g->valid() && $this->g->key() !== Co::RETURN_WITH;
+            return $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
         } catch (\RuntimeException $e) {
             $this->e = $e;
         }

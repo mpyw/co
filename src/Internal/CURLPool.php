@@ -2,47 +2,64 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
-use mpyw\Co\Internal\CallStack;
+use mpyw\Co\Internal\Dispatcher;
 
-class CURLPool {
+class CURLPool
+{
+    /**
+     * Options.
+     * @var array
+     */
+    private $options;
 
-    private $mh;                          // curl_multi_init()
-    private $count = 0;                   // count(curl_multi_add_handle called)
-    private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
-    private $co;
-    private $parents = array();
+    /**
+     * cURL multi handle.
+     * @var resource
+     */
+    private $mh;
 
-    public function __construct(Co $co)
+    /**
+     * The number of dispatched cURL handle.
+     * @var int
+     */
+    private $count = 0;
+
+    /**
+     * cURL handles those have not been dispatched.
+     * @var array
+     */
+    private $queue;
+
+    /**
+     * Constructor.
+     * Initialize cURL multi handle.
+     * @param array $options
+     */
+    public function __construct(array $options)
     {
-        $this->co = $co;
-        $this->initMultiHandle();
-    }
-
-    private function initMultiHandle()
-    {
+        $this->options = $options;
         $this->mh = curl_multi_init();
         if (function_exists('curl_multi_setopt')) {
             $flags =
-                ($this->co->options['pipeline'] ? 1 : 0)
-                | ($this->co->options['multiplex'] ? 2 : 0)
+                ($this->options['pipeline'] ? 1 : 0)
+                | ($this->options['multiplex'] ? 2 : 0)
             ;
             curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
         }
     }
 
     /**
-     * Call curl_multi_add_handle or push into waiting queue.
-     *
-     * @access private
+     * Call curl_multi_add_handle() or push into waiting queue.
      * @param resource $ch
      */
-    public function enqueue($ch, CallStack $stack)
+    public function enqueue($ch)
     {
-        if ($this->concurrency && $this->count >= $this->co->options['concurrency']) {
+        if ($this->count >= $this->options['concurrency']) {
             if (isset($this->queue[(string)$ch])) {
                 throw new \InvalidArgumentException("The cURL resource is already enqueued: $ch");
             }
             $this->queue[(string)$ch] = $ch;
+            Dispatcher::notify('curl_enqueued-' . (string)$ch);
         } else {
             $errno = curl_multi_add_handle($this->mh, $ch);
             if ($errno !== CURLM_OK) {
@@ -54,27 +71,25 @@ class CURLPool {
                 throw new $class($msg);
             }
             ++$this->count;
+            Dispatcher::notify('curl_added-' . (string)$ch);
         }
-        $this->parents[(string)$ch] = $stack;
     }
 
     /**
      * Run curl_multi_exec() loop.
-     *
-     * @access private
-     * @see self::updateCurl(), self::enqueue()
      */
-    public function wait($updator)
+    public function wait()
     {
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
-            curl_multi_select($this->mh, $this->co->options['interval']); // Wait events.
-            curl_multi_exec($this->mh, $callstack);
+            curl_multi_select($this->mh, $this->options['interval']); // Wait events.
+            curl_multi_exec($this->mh, $active);
             foreach ($this->readEntries() as $entry) {
-                $key = (string)$entry['handle'];
-                $callback = $this->parents[$key];
-                unset($this->parents[$key]);
-                $callback($entry['handle'], $entry['result']);
+                Dispatcher::notify('curl_complete-' . $entry['handle'], $entry['handle'], $entry['result']);
+                if ($this->queue) {
+                    $ch = array_shift($this->queue);
+                    $this->enqueue($ch);
+                }
             }
         } while ($this->count > 0 || $this->queue);
         // All request must be done when reached here.
@@ -83,6 +98,10 @@ class CURLPool {
         }
     }
 
+    /**
+     * Read completed cURL handles.
+     * @return array
+     */
     private function readEntries()
     {
         $entries = array();
@@ -92,12 +111,12 @@ class CURLPool {
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             --$this->count;
-            if ($this->queue) {
-                $ch = array_shift($this->queue);
-                $this->enqueue($ch, $this->parents[(string)$ch]);
-            }
         }
         return $entries;
     }
 
+    public function __sleep()
+    {
+        throw new \BadMethodCallException('Serialization is not supported.');
+    }
 }

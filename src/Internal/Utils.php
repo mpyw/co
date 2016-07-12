@@ -6,46 +6,7 @@ use mpyw\Co\Co;
 class Utils {
 
     /**
-     * Validate options.
-     *
-     * @access private
-     * @static
-     * @param array $options
-     * @return array
-     */
-    public static function validateOptions(array $options)
-    {
-        foreach ($options as $key => $value) {
-            if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
-                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, array(
-                    'flags' => FILTER_NULL_ON_FAILURE,
-                ));
-                if ($value === null) {
-                    throw new \InvalidArgumentException("Option[$key] must be boolean.");
-                }
-            } elseif ($key === 'interval') {
-                $value = filter_var($value, FILTER_VALIDATE_FLOAT);
-                if ($value === false || $value < 0.0) {
-                    throw new \InvalidArgumentException("Option[interval] must be positive float or zero.");
-                }
-            } elseif ($key === 'concurrency') {
-                $value = filter_var($value, FILTER_VALIDATE_INT);
-                if ($value === false || $value < 0) {
-                    throw new \InvalidArgumentException("Option[concurrency] must be positive integer or zero.");
-                }
-            } else {
-                throw new \InvalidArgumentException("Unknown option: $key");
-            }
-            $options[$key] = $value;
-        }
-        return $options;
-    }
-
-    /**
      * Normalize value.
-     *
-     * @access private
-     * @static
      * @param mixed $value
      * @return miexed
      */
@@ -54,19 +15,14 @@ class Utils {
         while ($value instanceof \Closure) {
             $value = $value();
         }
-        if (self::isArrayLike($value)
-            && !is_array($value)
-            && !$value->valid()) {
-            $value = array();
+        if (self::isArrayLike($value) && !is_array($value)) {
+            $value = iterator_to_array($value);
         }
         return $value;
     }
 
     /**
-     * Check if value is a valid cURL resource.
-     *
-     * @access private
-     * @static
+     * Check if value is a valid cURL handle.
      * @param mixed $value
      * @return bool
      */
@@ -77,9 +33,6 @@ class Utils {
 
     /**
      * Check if value is a valid Generator.
-     *
-     * @access private
-     * @static
      * @param mixed $value
      * @return bool
      */
@@ -90,9 +43,6 @@ class Utils {
 
     /**
      * Check if value is a valid array or Traversable, not a Generator.
-     *
-     * @access private
-     * @static
      * @param mixed $value
      * @return bool
      */
@@ -104,9 +54,6 @@ class Utils {
 
     /**
      * Flatten an array or a Traversable.
-     *
-     * @access private
-     * @static
      * @param mixed $value
      * @return array
      */
