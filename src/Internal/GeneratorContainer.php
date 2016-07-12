@@ -3,26 +3,52 @@
 namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
 
-class GeneratorContainer {
-
+/**
+ * Generator Container class.
+ */
+class GeneratorContainer
+{
+    /**
+     * Generator.
+     * @var Generator
+     */
     private $g;
+
+    /**
+     * Generator object hash.
+     * @var string
+     */
     private $h;
+
+    /**
+     * Thrown exception.
+     * @var Throwable|Exception
+     */
     private $e;
 
+    /**
+     * Constructor.
+     * @param Generator $g
+     */
     public function __construct(\Generator $g)
     {
         $this->g = $g;
-        ob_start();
-        var_dump($this->g);
-        preg_match('/\Aobject\(Generator\)(#\d++)/', ob_get_clean(), $m);
-        $this->h = "Generator id $m[1]";
+        $this->h = spl_object_hash($g);
     }
 
+    /**
+     * Return generator hash.
+     * @return string
+     */
     public function __toString()
     {
         return $this->h;
     }
 
+    /**
+     * Return whether generator is working.
+     * @return bool
+     */
     public function valid()
     {
         try {
@@ -33,21 +59,35 @@ class GeneratorContainer {
         }
     }
 
+    /**
+     * Return current key.
+     * @return mixed
+     */
     public function key()
     {
-        $this->valid();
+        $this->validateValidity();
         return $this->g->key();
     }
 
+    /**
+     * Return current value.
+     * @return mixed
+     */
     public function current()
     {
-        $this->valid();
+        $this->validateValidity();
         return $this->g->current();
     }
 
+    /**
+     * Send value into generator.
+     * @param mixed $value
+     * @NOTE: This method returns nothing,
+     *        while original generator returns something.
+     */
     public function send($value)
     {
-        $this->valid();
+        $this->validateValidity();
         try {
             $this->g->send($value);
         } catch (\RuntimeException $e) {
@@ -55,9 +95,15 @@ class GeneratorContainer {
         }
     }
 
+    /**
+     * Throw exception into generator.
+     * @param RuntimeException $e
+     * @NOTE: This method returns nothing,
+     *        while original generator returns something.
+     */
     public function throw_(\RuntimeException $e)
     {
-        $this->valid();
+        $this->validateValidity();
         try {
             $this->g->throw($value);
         } catch (\RuntimeException $e) {
@@ -65,13 +111,22 @@ class GeneratorContainer {
         }
     }
 
+    /**
+     * Return whether exception is thrown.
+     * @return bool
+     */
     public function thrown()
     {
         return $this->e !== null;
     }
 
+    /**
+     * Return value that generator has returned or thrown.
+     * @return mixed
+     */
     public function getReturnOrThrown()
     {
+        $this->validateInvalidity();
         if ($this->g->valid() && !$this->valid()) {
             return $value->current();
         }
@@ -81,4 +136,25 @@ class GeneratorContainer {
         return method_exists($this->g, 'getReturn') ? $this->g->getReturn() : null;
     }
 
+    /**
+     * Validate that generator has finished running.
+     * @throws LogicException
+     */
+    private function validateValidity()
+    {
+        if (!$this->valid()) {
+            throw new \LogicException('Unreachable here.');
+        }
+    }
+
+    /**
+     * Validate that generator is still running.
+     * @throws LogicException
+     */
+    private function validateInvalidity()
+    {
+        if ($this->valid()) {
+            throw new \LogicException('Unreachable here.');
+        }
+    }
 }
