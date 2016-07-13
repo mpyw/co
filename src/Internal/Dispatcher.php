@@ -43,8 +43,8 @@ class Dispatcher
     public function remove($event, \Closure $callback)
     {
         $hash = spl_object_hash($callback);
-        if (isset($this->subscribers[$event][$callback])) {
-            unset($this->subscribers[$event][$callback]);
+        if (isset($this->subscribers[$event][$hash])) {
+            unset($this->subscribers[$event][$hash]);
         }
         if (empty($this->subscribers[$event])) {
             unset($this->subscribers[$event]);
