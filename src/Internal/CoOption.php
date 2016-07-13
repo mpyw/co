@@ -56,7 +56,7 @@ class CoOption implements \ArrayAccess
      * Constructor.
      * @param array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
     {
         $this->options = self::validateOptions($options) + self::$defaults;
     }
@@ -77,7 +77,7 @@ class CoOption implements \ArrayAccess
      */
     public function offsetExists($offset)
     {
-        return isset(self::$types[$offset]);
+        return isset($this->options[$offset]);
     }
 
     /**
@@ -87,10 +87,10 @@ class CoOption implements \ArrayAccess
      */
     public function offsetGet($offset)
     {
-        if (!$this->offsetExists($offset)) {
+        if (!isset($this->options[$offset])) {
             throw new \DomainException('Undefined field: ' + $offset);
         }
-        return self::$defaults[$offset];
+        return $this->options[$offset];
     }
 
     /**
@@ -176,7 +176,7 @@ class CoOption implements \ArrayAccess
     {
         $value = filter_var($value, FILTER_VALIDATE_INT);
         if ($value === false || $value < 0) {
-            throw new \InvalidArgumentException("Option[concurrency] must be positive integer or zero.");
+            throw new \InvalidArgumentException("Option[$key] must be positive integer or zero.");
         }
         return $value;
     }

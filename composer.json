@@ -29,12 +29,12 @@
         "php": ">=7.0.0",
         "lib-curl": ">=7.2.0",
         "mpyw/twistoauth": "~3.0",
-        "codeception/aspect-mock": "^0.5.5",
-        "codeception/codeception": "*",
+        "codeception/aspect-mock": "^2.0",
+        "codeception/codeception": "^2.2",
         "codeception/specify": "*",
         "codeception/verify": "*",
         "satooshi/php-coveralls": "^1.0",
-        "mpyw/privator": "~1.0"
+        "mpyw/privator": "^2.0"
     },
     "scripts": {
         "test": [
