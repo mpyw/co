@@ -24,13 +24,29 @@ class GeneratorContainer
     private $e;
 
     /**
+     * [$options description]
+     * @var [type]
+     */
+    private $options;
+
+    /**
+     * [$sendCalled description]
+     * @var [type]
+     */
+    private $sendCalled = false;
+
+    /**
      * Constructor.
      * @param Generator $g
      */
-    public function __construct(\Generator $g)
+    public function __construct(\Generator $g, CoOption $options, $yield_key)
     {
         $this->g = $g;
         $this->h = spl_object_hash($g);
+        if ($yield_key === CoInterface::SAFE || $yield_key === CoInterface::UNSAFE) {
+            $options = $options->reconfigure(['throw' => $yield_key]);
+        }
+        $this->options = $options;
     }
 
     /**
@@ -51,9 +67,9 @@ class GeneratorContainer
         try {
             $this->g->current();
             return $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
-        } catch (\RuntimeException $e) {
-            $this->e = $e;
-        }
+        } catch (\RuntimeException $e) { }
+        $this->e = $e;
+        return false;
     }
 
     /**
@@ -86,10 +102,20 @@ class GeneratorContainer
     {
         $this->validateValidity();
         try {
+            $this->sendCalled = true;
             $this->g->send($value);
         } catch (\RuntimeException $e) {
             $this->e = $e;
         }
+    }
+
+    /**
+     * [sendCalled description]
+     * @return [type] [description]
+     */
+    public function sendCalled()
+    {
+        return $this->sendCalled;
     }
 
     /**
@@ -114,7 +140,7 @@ class GeneratorContainer
      */
     public function thrown()
     {
-        return $this->e !== null;
+        return $this->e !== null && $this->options['throw'];
     }
 
     /**

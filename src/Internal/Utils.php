@@ -28,6 +28,23 @@ class Utils {
         return $value;
     }
 
+    public static function getYieldables(array $array, array $keylist = [])
+    {
+        $r = [];
+        foreach ($array as $key => $value) {
+            array_splice($keylist, count($keylist), 0, $key);
+            if (self::isCurl($value) || self::isGeneratorContainer($value)) {
+                $r[] = [
+                    'value' => $value,
+                    'keylist' => $newlist,
+                ];
+            } elseif (is_array($value)) {
+                array_splice($r, count($r), 0, self::getYieldables($value, $newlist));
+            }
+        }
+        return $r;
+    }
+    
     /**
      * Check if value is a valid cURL handle.
      * @param mixed $value

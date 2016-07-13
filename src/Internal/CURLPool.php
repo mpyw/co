@@ -4,6 +4,7 @@ namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
 use mpyw\Co\Internal\Dispatcher;
 use mpyw\Co\Internal\CoOption;
+use mpyw\Co\CURLException;
 
 class CURLPool
 {
@@ -84,11 +85,10 @@ class CURLPool
             curl_multi_select($this->mh, $this->options['interval']); // Wait events.
             curl_multi_exec($this->mh, $active);
             foreach ($this->readEntries() as $entry) {
-                $this->dispatcher->notify('curl_completed-' . $entry['handle'], $entry['handle'], $entry['result']);
-                if ($this->queue) {
-                    $ch = array_shift($this->queue);
-                    $this->enqueue($ch);
-                }
+                $resolved = $entry['result'] === CURLE_OK
+                    ? curl_multi_getcontent($entry['handle'])
+                    : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
+                $this->dispatcher->notify('curl_completed-' . $entry['handle'], $resolved);
             }
         } while ($this->count > 0 || $this->queue);
         // All request must be done when reached here.
@@ -110,6 +110,10 @@ class CURLPool
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             --$this->count;
+            if ($this->queue) {
+                $ch = array_shift($this->queue);
+                $this->enqueue($ch);
+            }
         }
         return $entries;
     }

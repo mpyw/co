@@ -24,7 +24,7 @@ class CallStack
      * [$return description]
      * @var [type]
      */
-    private $return;
+    private $yield;
 
     /**
      * [$original description]
@@ -54,10 +54,48 @@ class CallStack
     {
         $this->dispacher = $dispacher;
         $this->pool = $pool;
-        $this->root = [$gc];
-        $this->return = [$gc];
         $this->gc = $gc;
-        $this->prepareArray($this->root, [0]);
+        $this->processGeneratorContainer($gc);
+    }
+
+    private function processGeneratorContainer(GeneratorContainer $gc)
+    {
+        if (!$gc->valid()) {
+            $resolved = Utils::normalize($gc->getReturnOrThrown());
+            $this->dispatcher->notify('generator_completed-' . (string)$gc, $resolved);
+            return;
+        }
+        if (!$gc->sendCalled()) {
+            $value = Utils::normalize($gc->current());
+            $yieldables = Utils::getYieldables($value);
+            $max = count($yieldables);
+            $callback = function () use (&$max, &$callback, $gc) {
+                if (--$max < 1) {
+                    $this->dispatcher->remove('generator_yield_prepared-' . (string)$gc);
+                    $this->dispatcher->notify('generator_completed-' . (string)$gc);
+                }
+            };
+            $this->dispatcher->dispatch('generator_yield_prepared-' . (string)$gc, $callback);
+            
+            foreach ($yieldables as $yieldable) {
+                if (Utils::isCurl($yieldable['value'])) {
+                    $callback = function ($resolved) {
+                        if ($this->dispatcher)
+                    };
+                    $this->dispatcher->dispatchOnce('curl_completed-' . (string)$yieldable['value'], $callback);
+                }
+                $this->dispatcher->dispatch('')
+            }
+        }
+    }
+
+    private function assignNewValue($newvalue, array $keylist = [])
+    {
+        $current = &$this->yield;
+        while (false !== $key = array_shift($keylist)) {
+            $current = &$current[$key];
+        }
+        $current = $newvalue;
     }
 
     /**
@@ -95,11 +133,6 @@ class CallStack
     }
 
     private function removeGeneratorContainer()
-    {
-
-    }
-
-    private function processGeneratorContainer()
     {
 
     }

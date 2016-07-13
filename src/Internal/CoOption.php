@@ -38,7 +38,7 @@ class CoOption implements \ArrayAccess
      * Set default options.
      * @param array $options
      */
-    public static function setDefaultOptions(array $options)
+    public static function setDefault(array $options)
     {
         self::$defaults = self::validateOptions($options) + self::$defaults;
     }
@@ -47,7 +47,7 @@ class CoOption implements \ArrayAccess
      * Get default options.
      * @param array $options
      */
-    public static function getDefaultOptions()
+    public static function getDefault()
     {
         return self::$defaults;
     }
@@ -59,6 +59,15 @@ class CoOption implements \ArrayAccess
     public function __construct(array $options)
     {
         $this->options = self::validateOptions($options) + self::$defaults;
+    }
+
+    /**
+     * Reconfigure to get new instance.
+     * @return CoOption
+     */
+    public function reconfigure(array $options)
+    {
+        return new self($options + $this->options);
     }
 
     /**
