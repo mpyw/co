@@ -2,18 +2,12 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
-use mpyw\Co\Internal\Dispatcher;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\CURLException;
+use React\Promise\Deferred;
 
 class CURLPool
 {
-    /**
-     * Dispatcher.
-     * @var Dispatcher
-     */
-    private $dispatcher;
-
     /**
      * Options.
      * @var CoOption
@@ -36,17 +30,21 @@ class CURLPool
      * cURL handles those have not been dispatched.
      * @var array
      */
-    private $queue;
+    private $queue = [];
+
+    /**
+     * React Deferreds.
+     * @var Deferred
+     */
+    private $deferreds = [];
 
     /**
      * Constructor.
      * Initialize cURL multi handle.
-     * @param Dispatcher $dispacher
      * @param CoOption $options
      */
-    public function __construct(Dispatcher $dispacher, CoOption $options)
+    public function __construct(CoOption $options)
     {
-        $this->dispacher = $dispatcher;
         $this->options = $options;
         $this->mh = curl_multi_init();
         $flags = (int)$options['pipeline'] + (int)$options['multiplex'] * 2;
@@ -54,25 +52,27 @@ class CURLPool
     }
 
     /**
-     * Call curl_multi_add_handle() or push into waiting queue.
+     * Call curl_multi_add_handle() or push into queue.
+     * @param Deferred $deferred
      * @param resource $ch
      */
-    public function enqueue($ch)
+    public function addOrEnqueue($deferred, $ch)
     {
         if ($this->count >= $this->options['concurrency']) {
             if (isset($this->queue[(string)$ch])) {
-                throw new \InvalidArgumentException("The cURL resource is already enqueued: $ch");
+                throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
             }
             $this->queue[(string)$ch] = $ch;
         } else {
             $errno = curl_multi_add_handle($this->mh, $ch);
             if ($errno !== CURLM_OK) {
                 $msg = curl_multi_strerror($errno) . ": $ch";
-                $class = $errno === 7 ? 'InvalidArgumentException' : 'RuntimeException';
+                $class = $errno === 7 ? '\InvalidArgumentException' : '\RuntimeException';
                 throw new $class($msg);
             }
             ++$this->count;
         }
+        $this->deferreds[(string)$ch] = $deferred;
     }
 
     /**
@@ -85,10 +85,14 @@ class CURLPool
             curl_multi_select($this->mh, $this->options['interval']); // Wait events.
             curl_multi_exec($this->mh, $active);
             foreach ($this->readEntries() as $entry) {
-                $resolved = $entry['result'] === CURLE_OK
+                $r = $entry['result'] === CURLE_OK
                     ? curl_multi_getcontent($entry['handle'])
                     : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
-                $this->dispatcher->notify('curl_completed-' . $entry['handle'], $resolved);
+                if (isset($this->deferred[(string)$entry['result']])) {
+                    $deferred = $this->deferred[(string)$entry['result']];
+                    unset($this->deferred[(string)$entry['result']]);
+                    $resolved instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
+                }
             }
         } while ($this->count > 0 || $this->queue);
         // All request must be done when reached here.
@@ -112,14 +116,9 @@ class CURLPool
             --$this->count;
             if ($this->queue) {
                 $ch = array_shift($this->queue);
-                $this->enqueue($ch);
+                $this->addOrEnqueue($ch);
             }
         }
         return $entries;
-    }
-
-    public function __sleep()
-    {
-        throw new \BadMethodCallException('Serialization is not supported.');
     }
 }
