@@ -2,6 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CoInterface;
+use mpyw\Co\Internal\CoOption;
 
 class GeneratorContainer
 {
@@ -24,29 +25,32 @@ class GeneratorContainer
     private $e;
 
     /**
-     * [$options description]
-     * @var [type]
+     * Default options.
+     * @var CoOption
      */
     private $options;
 
     /**
-     * [$sendCalled description]
-     * @var [type]
-     */
-    private $sendCalled = false;
-
-    /**
      * Constructor.
      * @param Generator $g
+     * @param CoOption $options
+     * @param mixed $yield_key
      */
-    public function __construct(\Generator $g, CoOption $options, $yield_key)
+    public function __construct(\Generator $g, CoOption $options = null, $yield_key = null)
     {
         $this->g = $g;
         $this->h = spl_object_hash($g);
-        if ($yield_key === CoInterface::SAFE || $yield_key === CoInterface::UNSAFE) {
-            $options = $options->reconfigure(['throw' => $yield_key]);
+        if ($options === null) {
+            $options = new CoOption;
+        }
+        if ($yield_key === CoInterface::SAFE) {
+            $options = $options->reconfigure(['throw' => false]);
+        }
+        if ($yield_key === CoInterface::UNSAFE) {
+            $options = $options->reconfigure(['throw' => true]);
         }
         $this->options = $options;
+        $this->valid();
     }
 
     /**
@@ -66,7 +70,7 @@ class GeneratorContainer
     {
         try {
             $this->g->current();
-            return $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
+            return $this->e === null && $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
         } catch (\RuntimeException $e) { }
         $this->e = $e;
         return false;
@@ -102,20 +106,10 @@ class GeneratorContainer
     {
         $this->validateValidity();
         try {
-            $this->sendCalled = true;
             $this->g->send($value);
         } catch (\RuntimeException $e) {
             $this->e = $e;
         }
-    }
-
-    /**
-     * [sendCalled description]
-     * @return [type] [description]
-     */
-    public function sendCalled()
-    {
-        return $this->sendCalled;
     }
 
     /**
@@ -150,8 +144,8 @@ class GeneratorContainer
     public function getReturnOrThrown()
     {
         $this->validateInvalidity();
-        if ($this->g->valid() && !$this->valid()) {
-            return $value->current();
+        if ($this->e === null && $this->g->valid() && !$this->valid()) {
+            return $this->g->current();
         }
         if ($this->e) {
             return $this->e;
