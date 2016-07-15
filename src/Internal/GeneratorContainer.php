@@ -54,6 +54,15 @@ class GeneratorContainer
     }
 
     /**
+     * Return options.
+     * @return CoOption
+     */
+    public function getOptions()
+    {
+        return $this->options;
+    }
+
+    /**
      * Return generator hash.
      * @return string
      */

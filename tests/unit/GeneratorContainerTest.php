@@ -49,6 +49,14 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $this->assertEquals(spl_object_hash($gen), (string)$con);
     }
 
+    public function testGetOptions()
+    {
+        $options = new CoOption;
+        $gen = (function () { yield 1; })();
+        $con = new GeneratorContainer($gen, $options);
+        $this->assertSame($options, $con->getOptions());
+    }
+
     public function testNormalFlow()
     {
         $gen = (function () {
