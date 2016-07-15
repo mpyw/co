@@ -81,7 +81,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
             },
         ];
         foreach ($invalid_cases as $i => $case) {
-            $this->specify("invalid ($i)", $case, ['throws' => 'InvalidArgumentException']);
+            $this->specify("invalid ($i)", $case, ['throws' => \InvalidArgumentException::class]);
         }
     }
 
@@ -100,7 +100,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
             },
         ];
         foreach ($invalid_cases as $i => $case) {
-            $this->specify("invalid ($i)", $case, ['throws' => 'InvalidArgumentException']);
+            $this->specify("invalid ($i)", $case, ['throws' => \InvalidArgumentException::class]);
         }
     }
 
@@ -132,19 +132,19 @@ class CoOptionTest extends \Codeception\TestCase\Test {
 
         $this->specify('invalid construction', function () use ($options) {
             new CoOption(['invalid' => true]);
-        }, ['throws' => 'InvalidArgumentException']);
+        }, ['throws' => \InvalidArgumentException::class]);
 
         $this->specify('invalid assignment', function () use ($options) {
             $options['pipeline'] = false;
-        }, ['throws' => 'BadMethodCallException']);
+        }, ['throws' => \BadMethodCallException::class]);
 
         $this->specify('invalid unset', function () use ($options){
             unset($options['pipeline']);
-        }, ['throws' => 'BadMethodCallException']);
+        }, ['throws' => \BadMethodCallException::class]);
 
         $this->specify('Undefined field', function () use ($options){
             $options['invalid'];
-        }, ['throws' => 'DomainException']);
+        }, ['throws' => \DomainException::class]);
     }
 
 }

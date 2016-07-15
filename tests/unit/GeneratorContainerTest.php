@@ -63,7 +63,7 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $con->send(4);
         $this->assertFalse($con->valid());
         $this->assertEquals(5, $con->getReturnOrThrown());
-        $this->setExpectedException('LogicException');
+        $this->setExpectedException(\LogicException::class);
         $con->send(null);
     }
 
@@ -81,7 +81,7 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $con->send(4);
         $this->assertFalse($con->valid());
         $this->assertEquals(5, $con->getReturnOrThrown());
-        $this->setExpectedException('LogicException');
+        $this->setExpectedException(\LogicException::class);
         $con->send(null);
     }
 
@@ -92,7 +92,7 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
             yield null;
         })();
         $con = new GeneratorContainer($gen);
-        $this->setExpectedException('LogicException');
+        $this->setExpectedException(\LogicException::class);
         $con->getReturnOrThrown();
     }
 
@@ -106,11 +106,11 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $con = new GeneratorContainer($genfunc(), new CoOption(['throw' => false]));
         $this->assertFalse($con->valid());
         $this->assertFalse($con->thrown());
-        $this->assertInstanceOf('RuntimeException', $con->getReturnOrThrown());
+        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
         $con = new GeneratorContainer($genfunc());
         $this->assertFalse($con->valid());
         $this->assertTrue($con->thrown());
-        $this->assertInstanceOf('RuntimeException', $con->getReturnOrThrown());
+        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
     }
 
     public function testExternalException()
@@ -124,13 +124,13 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $con->throw_(new \RuntimeException);
         $this->assertFalse($con->valid());
         $this->assertFalse($con->thrown());
-        $this->assertInstanceOf('RuntimeException', $con->getReturnOrThrown());
+        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
         $gen = $genfunc();
         $con = new GeneratorContainer($gen);
         $con->throw_(new \RuntimeException);
         $this->assertFalse($con->valid());
         $this->assertTrue($con->thrown());
-        $this->assertInstanceOf('RuntimeException', $con->getReturnOrThrown());
+        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
     }
 
 }
