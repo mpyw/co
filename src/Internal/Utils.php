@@ -1,6 +1,8 @@
 <?php
 
 namespace mpyw\Co\Internal;
+
+use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\GeneratorContainer;
 
 class Utils {
@@ -12,21 +14,36 @@ class Utils {
      *   Array -> Array (children's are normalized)
      *   Traversable -> Array (children's are normalized)
      *   Others -> Others
-     * @param mixed $value
+     * @param mixed    $value
+     * @param CoOption $options
+     * @param mixed    $yield_key
      * @return miexed
      */
-    public static function normalize($value)
+    public static function normalize($value, CoOption $options, $yield_key = null)
     {
         while ($value instanceof \Closure) {
-            $value = $value();
+            try {
+                $value = $value();
+            } catch (\RuntimeException $e) {
+                if ($yield_key === CoInterface::SAFE) {
+                    $options = $options->reconfigure(['throw' => false]);
+                }
+                if ($yield_key === CoInterface::UNSAFE) {
+                    $options = $options->reconfigure(['throw' => true]);
+                }
+                if ($options['throw']) {
+                    throw $e;
+                }
+                return $e;
+            }
         }
         if ($value instanceof \Generator) {
-            return new GeneratorContainer($value);
+            return new GeneratorContainer($value, $options, $yield_key);
         }
         if (self::isArrayLike($value)) {
             $tmp = [];
             foreach ($value as $k => $v) {
-                $tmp[$k] = self::normalize($v);
+                $tmp[$k] = self::normalize($v, $options, $yield_key);
             }
             return $tmp;
         }

@@ -3,6 +3,7 @@
 use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Utils;
+use mpyw\Co\Internal\CoOption;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 
@@ -64,8 +65,10 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $this->assertFalse(Utils::isArrayLike($resource));
     }
 
-    public function testNormalize()
+    public function testBasicNormalize()
     {
+        $options = new CoOption;
+
         $genfunc = function () {
             $x = yield function () {
                 return function () {
@@ -85,11 +88,11 @@ class UtilsTest extends \Codeception\TestCase\Test {
             ]);
         };
 
-        $gen1 = Utils::normalize($genfunc);
+        $gen1 = Utils::normalize($genfunc, $options);
         $this->assertInstanceOf(GeneratorContainer::class, $gen1);
         $this->assertInstanceOf(\Closure::class, $gen1->current());
 
-        $r1 = Utils::normalize($gen1->current());
+        $r1 = Utils::normalize($gen1->current(), $options);
         $this->assertEquals(1, $r1[0]);
         $this->assertEquals(2, $r1[1]);
         $this->assertInstanceOf(GeneratorContainer::class, $r1[2]);
@@ -98,7 +101,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $this->assertEquals(3, $gen2->current());
         $gen2->send('A');
 
-        $r2 = Utils::normalize($gen2->getReturnOrThrown());
+        $r2 = Utils::normalize($gen2->getReturnOrThrown(), $options);
         $this->assertEquals(4, $r2);
         $this->assertFalse($gen2->valid());
         $this->assertFalse($gen2->thrown());
@@ -112,8 +115,81 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $this->assertFalse($gen2->valid());
         $this->assertFalse($gen2->thrown());
 
-        $r3 = Utils::normalize($r3);
+        $r3 = Utils::normalize($r3, $options);
         $this->assertEquals(['B', 'C'], $r3);
+    }
+
+    public function testNormalizeWithYieldKeysOnGeneratorFunction()
+    {
+        $options = new CoOption;
+        $genfunc = function () {
+            yield CoInterface::SAFE => function () {
+                throw new \RuntimeException;
+                yield null;
+            };
+            yield function () {
+                throw new \RuntimeException;
+                yield null;
+            };
+            yield null;
+        };
+
+        $gen1 = Utils::normalize($genfunc, $options);
+        $this->assertInstanceOf(GeneratorContainer::class, $gen1);
+        $this->assertTrue($gen1->valid());
+        $this->assertEquals(CoInterface::SAFE, $gen1->key());
+        $this->assertInstanceOf(\Closure::class, $gen1->current());
+
+        $gen2 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+        $this->assertInstanceOf(GeneratorContainer::class, $gen2);
+        $this->assertFalse($gen2->valid());
+        $this->assertFalse($gen2->thrown());
+        $this->assertInstanceOf(\RuntimeException::class, $gen2->getReturnOrThrown());
+
+        $gen1->send(null);
+
+        $gen3 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+        $this->assertInstanceOf(GeneratorContainer::class, $gen3);
+        $this->assertFalse($gen3->valid());
+        $this->assertTrue($gen3->thrown());
+        $this->assertInstanceOf(\RuntimeException::class, $gen2->getReturnOrThrown());
+    }
+
+    public function testNormalizeWithYieldKeysOnNormalFunction()
+    {
+        $options = new CoOption;
+        $genfunc = function () {
+            yield CoInterface::SAFE => function () {
+                throw new \RuntimeException;
+            };
+            yield function () {
+                throw new \RuntimeException;
+            };
+            yield null;
+        };
+
+        $gen1 = Utils::normalize($genfunc, $options);
+        $this->assertInstanceOf(GeneratorContainer::class, $gen1);
+        $this->assertTrue($gen1->valid());
+        $this->assertEquals(CoInterface::SAFE, $gen1->key());
+        $this->assertInstanceOf(\Closure::class, $gen1->current());
+
+        $r1 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+        $this->assertInstanceOf(\RuntimeException::class, $r1);
+        $this->assertTrue($gen1->valid());
+        $this->assertFalse($gen1->thrown());
+
+        $gen1->send(null);
+
+        try {
+            Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+            $this->assertFalse(true);
+        } catch (\RuntimeException $e) {
+            $gen1->throw_($e);
+        }
+
+        $this->assertFalse($gen1->valid());
+        $this->assertTrue($gen1->thrown());
     }
 
     public function testGetYieldables()
