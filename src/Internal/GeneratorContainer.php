@@ -33,8 +33,8 @@ class GeneratorContainer
     /**
      * Constructor.
      * @param Generator $g
-     * @param CoOption $options
-     * @param mixed $yield_key
+     * @param CoOption  $options
+     * @param mixed     $yield_key
      */
     public function __construct(\Generator $g, CoOption $options = null, $yield_key = null)
     {
@@ -72,7 +72,7 @@ class GeneratorContainer
     }
 
     /**
-     * Return whether generator is working.
+     * Return whether generator is actually working.
      * @return bool
      */
     public function valid()

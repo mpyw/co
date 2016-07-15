@@ -9,14 +9,14 @@ class Utils {
 
     /**
      * Recursively normalize value.
-     *   Closure -> Returned value
-     *   Generator -> GeneratorContainer
-     *   Array -> Array (children's are normalized)
+     *   Closure     -> Returned value
+     *   Generator   -> GeneratorContainer
+     *   Array       -> Array (children's are normalized)
      *   Traversable -> Array (children's are normalized)
-     *   Others -> Others
-     * @param mixed    $value
-     * @param CoOption $options
-     * @param mixed    $yield_key
+     *   Others      -> Others
+     * @param  mixed    $value
+     * @param  CoOption $options
+     * @param  mixed    $yield_key
      * @return miexed
      */
     public static function normalize($value, CoOption $options, $yield_key = null)
@@ -53,10 +53,10 @@ class Utils {
     /**
      * Recursively search yieldable values.
      * Each entries are assoc those contain keys 'value' and 'keylist'.
-     *   value -> the value itself.
+     *   value   -> the value itself.
      *   keylist -> position of the value. nests are represented as array values.
-     * @param  mixed  $value   Must be already normalized.
-     * @param  array  $keylist Internally used.
+     * @param  mixed $value   Must be already normalized.
+     * @param  array $keylist Internally used.
      * @return array
      */
     public static function getYieldables($value, array $keylist = [])
@@ -80,7 +80,7 @@ class Utils {
 
     /**
      * Check if value is a valid cURL handle.
-     * @param mixed $value
+     * @param  mixed $value
      * @return bool
      */
     public static function isCurl($value)
@@ -90,7 +90,7 @@ class Utils {
 
     /**
      * Check if value is a valid Generator.
-     * @param mixed $value
+     * @param  mixed $value
      * @return bool
      */
     public static function isGeneratorContainer($value)
@@ -100,7 +100,7 @@ class Utils {
 
     /**
      * Check if value is a valid array or Traversable, not a Generator.
-     * @param mixed $value
+     * @param  mixed $value
      * @return bool
      */
     public static function isArrayLike($value)

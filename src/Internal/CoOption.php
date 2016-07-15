@@ -6,7 +6,6 @@ class CoOption implements \ArrayAccess
 {
     /**
      * Field types.
-     * @const array
      */
     const TYPES = [
         'throw' => 'Bool', // Throw CURLExceptions?
@@ -72,7 +71,7 @@ class CoOption implements \ArrayAccess
 
     /**
      * Implemention of ArrayAccess.
-     * @param mixed $offset
+     * @param  mixed $offset
      * @return bool
      */
     public function offsetExists($offset)
@@ -82,7 +81,7 @@ class CoOption implements \ArrayAccess
 
     /**
      * Implemention of ArrayAccess.
-     * @param mixed $offset
+     * @param  mixed $offset
      * @return mixed
      */
     public function offsetGet($offset)
@@ -95,8 +94,8 @@ class CoOption implements \ArrayAccess
 
     /**
      * Implemention of ArrayAccess.
-     * @param mixed $offset
-     * @param mixed $value
+     * @param  mixed $offset
+     * @param  mixed $value
      * @throws BadMethodCallException
      */
     public function offsetSet($offset, $value)
@@ -106,7 +105,7 @@ class CoOption implements \ArrayAccess
 
     /**
      * Implemention of ArrayAccess.
-     * @param mixed $offset
+     * @param  mixed $offset
      * @throws BadMethodCallException
      */
     public function offsetUnset($offset)
@@ -116,7 +115,7 @@ class CoOption implements \ArrayAccess
 
     /**
      * Validate options.
-     * @param array $options
+     * @param  array $options
      * @return array
      */
     private static function validateOptions(array $options)
@@ -134,7 +133,7 @@ class CoOption implements \ArrayAccess
     /**
      * Validate bool value.
      * @param  string $key
-     * @param  mixed $value
+     * @param  mixed  $value
      * @throws InvalidArgumentException
      * @return bool
      */
@@ -152,7 +151,7 @@ class CoOption implements \ArrayAccess
     /**
      * Validate natural float value.
      * @param  string $key
-     * @param  mixed $value
+     * @param  mixed  $value
      * @throws InvalidArgumentException
      * @return float
      */
@@ -168,7 +167,7 @@ class CoOption implements \ArrayAccess
     /**
      * Validate natural int value.
      * @param  string $key
-     * @param  mixed $value
+     * @param  mixed  $value
      * @throws InvalidArgumentException
      * @return int
      */
