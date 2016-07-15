@@ -1,12 +1,17 @@
 <?php
 
-namespace mpyw\Co;
+namespace mpyw\Co\Internal;
 use mpyw\Co\Internal\GeneratorContainer;
 
 class Utils {
 
     /**
-     * Normalize value.
+     * Recursively normalize value.
+     *   Closure -> Returned value
+     *   Generator -> GeneratorContainer
+     *   Array -> Array (children's are normalized)
+     *   Traversable -> Array (children's are normalized)
+     *   Others -> Others
      * @param mixed $value
      * @return miexed
      */
@@ -21,30 +26,41 @@ class Utils {
         if (self::isArrayLike($value)) {
             $tmp = [];
             foreach ($value as $k => $v) {
-                $tmp[$k] = self::normalize($value);
+                $tmp[$k] = self::normalize($v);
             }
             return $tmp;
         }
         return $value;
     }
 
-    public static function getYieldables(array $array, array $keylist = [])
+    /**
+     * Recursively search yieldable values.
+     * Each entries are assoc those contain keys 'value' and 'keylist'.
+     *   value -> the value itself.
+     *   keylist -> position of the value. nests are represented as array values.
+     * @param  mixed  $value   Must be already normalized.
+     * @param  array  $keylist Internally used.
+     * @return array
+     */
+    public static function getYieldables($value, array $keylist = [])
     {
         $r = [];
-        foreach ($array as $key => $value) {
-            array_splice($keylist, count($keylist), 0, $key);
+        if (!is_array($value)) {
             if (self::isCurl($value) || self::isGeneratorContainer($value)) {
                 $r[] = [
                     'value' => $value,
-                    'keylist' => $newlist,
+                    'keylist' => $keylist,
                 ];
-            } elseif (is_array($value)) {
-                array_splice($r, count($r), 0, self::getYieldables($value, $newlist));
             }
+            return $r;
+        }
+        foreach ($value as $k => $v) {
+            $newlist = array_merge($keylist, [$k]);
+            array_splice($r, count($r), 0, self::getYieldables($v, $newlist));
         }
         return $r;
     }
-    
+
     /**
      * Check if value is a valid cURL handle.
      * @param mixed $value
