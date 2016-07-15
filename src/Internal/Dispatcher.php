@@ -19,7 +19,7 @@ class Dispatcher
     public function dispatch($event, \Closure $callback, $once = false)
     {
         $hash = spl_object_hash($callback);
-        $this->subscribers[$event][$hash] = [
+        $this->subscribers[$event] = [
             'callback' => $callback,
             'once' => $once,
         ];
@@ -38,17 +38,10 @@ class Dispatcher
     /**
      * Remove callback from the event.
      * @param  string  $event
-     * @param  Closure $callback
      */
-    public function remove($event, \Closure $callback)
+    public function remove($event)
     {
-        $hash = spl_object_hash($callback);
-        if (isset($this->subscribers[$event][$hash])) {
-            unset($this->subscribers[$event][$hash]);
-        }
-        if (empty($this->subscribers[$event])) {
-            unset($this->subscribers[$event]);
-        }
+        unset($this->subscribers[$event]);
     }
 
     /**
@@ -61,12 +54,11 @@ class Dispatcher
         if (empty($this->subscribers[$event])) {
             return;
         }
-        foreach ($this->subscribers[$event] as $setting) {
-            $callback = $setting['callback'];
-            $callback(...$args);
-            if ($setting['once']) {
-                $this->remove($event, $callback);
-            }
+        $setting = $this->subscribers[$event];
+        $callback = $setting['callback'];
+        $callback(...$args);
+        if ($setting['once']) {
+            $this->remove($event);
         }
     }
 }
