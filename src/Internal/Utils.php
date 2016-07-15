@@ -47,7 +47,7 @@ class Utils {
         $r = [];
         if (!is_array($value)) {
             if (self::isCurl($value) || self::isGeneratorContainer($value)) {
-                $r[] = [
+                $r[(string)$value] = [
                     'value' => $value,
                     'keylist' => $keylist,
                 ];
@@ -56,7 +56,7 @@ class Utils {
         }
         foreach ($value as $k => $v) {
             $newlist = array_merge($keylist, [$k]);
-            array_splice($r, count($r), 0, self::getYieldables($v, $newlist));
+            $r = array_merge($r, self::getYieldables($v, $newlist));
         }
         return $r;
     }
