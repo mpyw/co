@@ -5,8 +5,9 @@ use mpyw\Co\Internal\Utils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\CURLPool;
-use React\Promise\all;
+
 use React\Promise\Deferred;
+use function React\Promise\all;
 
 class Co implements CoInterface
 {
@@ -27,12 +28,6 @@ class Co implements CoInterface
      * @var CURLPool
      */
     private $pool;
-
-    /**
-     * Return values for Co::wait().
-     * @var mixed
-     */
-    private $return;
 
     /**
      * Overwrite CoOption default.
@@ -66,16 +61,10 @@ class Co implements CoInterface
                 throw new \BadMethodCallException('Co::wait() is already running. Use Co::async() instead.');
             }
             self::$self = new self;
-            self::$self->start($value, new CoOption($options));
-            $return = self::$self->return;
-        } catch (\Throwable $e) {
-            throw $e;
-        } catch (\Exception $e) { // For both PHP7+ and PHP5
-            throw $e;
+            return self::$self->start($value, new CoOption($options));
         } finally {
             self::$self = null;
         }
-        return $return;
     }
 
     /**
@@ -105,6 +94,7 @@ class Co implements CoInterface
      * @param  mixed    $value
      * @param  CoOption $options
      * @param  bool     $wait
+     * @param  mixed    If $wait, return resolved value.
      */
     private function start($value, CoOption $options, $wait = true)
     {
@@ -112,17 +102,18 @@ class Co implements CoInterface
         $this->pool = new CURLPool($options);
         if ($wait) {
             $deferred = new Deferred;
-            $deferred->promise()->done(function ($return) {
-                $this->return = $return;
+            $deferred->promise()->done(function ($r) use (&$return) {
+                $return = $r;
             });
         }
         $genfunc = function () use ($value) {
             yield CoInterface::RETURN_WITH => (yield $value);
         };
-        $con = Utils::normalize($genfunc, self::$options);
-        $this->processGeneratorContainer($con);
+        $con = Utils::normalize($genfunc, $options);
+        $this->processGeneratorContainer($con, $wait ? $deferred : null);
         if ($wait) {
             $this->pool->wait();
+            return $return;
         }
     }
 
@@ -136,24 +127,36 @@ class Co implements CoInterface
         if (!$gc->valid()) {
             try {
                 $r = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
-                !$gc->thrown() ? $deferred->resolve($r) : $deferred->reject($r);
+                if ($deferred) {
+                    !$gc->thrown() ? $deferred->resolve($r) : $deferred->reject($r);
+                }
             } catch (\RuntimeException $e) {
                 !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
             }
             return;
         }
+
         try {
             $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
         } catch (\RuntimeException $e) {
-            !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+            if ($deferred) {
+                !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+            }
             return;
         }
+
         $yieldables = Utils::getYieldables($yielded);
+        if (!$yieldables) {
+            $gc->send($yielded);
+            $this->processGeneratorContainer($gc, $deferred);
+            return;
+        }
+
         $promises = [];
         foreach ($yieldables as $yieldable) {
             $dfd = new Deferred;
             $promises[(string)$yieldable['value']] = $dfd->promise();
-            if (self::isCurl($yieldable['value'])) {
+            if (Utils::isCurl($yieldable['value'])) {
                 if (!$gc->getOptions()['throw']) {
                     $original_dfd = $dfd;
                     $dfd = new Deferred;
@@ -162,14 +165,15 @@ class Co implements CoInterface
                     };
                     $dfd->promise()->then($absorber, $absorber);
                 }
-                $this->pool->addOrEnqueue($dfd, $yieldable['value']);
+                $this->pool->addOrEnqueue($yieldable['value'], $dfd);
                 continue;
             }
-            if (self::isGeneratorContainer($yieldable['value'])) {
-                $this->processGeneratorContainer($dfd, $yieldable['value']);
+            if (Utils::isGeneratorContainer($yieldable['value'])) {
+                $this->processGeneratorContainer($yieldable['value'], $dfd);
                 continue;
             }
         }
+
         all($promises)->then(
             function (array $results) use ($gc, $yielded, $yieldables, $deferred) {
                 foreach ($results as $hash => $resolved) {
@@ -180,10 +184,12 @@ class Co implements CoInterface
                     $current = $resolved;
                 }
                 $gc->send($yielded);
-                $this->processGeneratorContainer($deferred, $gc);
+                $this->processGeneratorContainer($gc, $deferred);
             },
             function (\RuntimeException $e) use ($gc, $deferred) {
-                !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+                if ($deferred) {
+                    !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+                }
             }
         );
     }

@@ -192,6 +192,23 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $this->assertTrue($gen1->thrown());
     }
 
+    public function testComplicated()
+    {
+        $genfunc = function () {
+            $x = yield function () {
+                yield CoInterface::RETURN_WITH => function () {
+                    return function () {
+                        yield CoInterface::RETURN_WITH => 3;
+                    };
+                    yield null;
+                };
+            };
+            $y = yield 2;
+            return $x + $y;
+        };
+        $this->assertFalse(true);
+    }
+
     public function testGetYieldables()
     {
         $genfunc = function () {

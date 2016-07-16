@@ -53,10 +53,10 @@ class CURLPool
 
     /**
      * Call curl_multi_add_handle() or push into queue.
-     * @param Deferred $deferred
      * @param resource $ch
+     * @param Deferred $deferred
      */
-    public function addOrEnqueue($deferred, $ch)
+    public function addOrEnqueue($ch, $deferred = null)
     {
         if ($this->count >= $this->options['concurrency']) {
             if (isset($this->queue[(string)$ch])) {
@@ -72,7 +72,9 @@ class CURLPool
             }
             ++$this->count;
         }
-        $this->deferreds[(string)$ch] = $deferred;
+        if ($deferred) {
+            $this->deferreds[(string)$ch] = $deferred;
+        }
     }
 
     /**
@@ -91,7 +93,7 @@ class CURLPool
                 if (isset($this->deferred[(string)$entry['result']])) {
                     $deferred = $this->deferred[(string)$entry['result']];
                     unset($this->deferred[(string)$entry['result']]);
-                    $resolved instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
+                    $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
                 }
             }
         } while ($this->count > 0 || $this->queue);
