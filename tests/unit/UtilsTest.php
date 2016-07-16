@@ -174,8 +174,12 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $this->assertEquals(CoInterface::SAFE, $gen1->key());
         $this->assertInstanceOf(\Closure::class, $gen1->current());
 
-        $r1 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
-        $this->assertInstanceOf(\RuntimeException::class, $r1);
+        try {
+            Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+            $this->assertFalse(true);
+        } catch (\RuntimeException $e) {
+            $gen1->throw_($e);
+        }
         $this->assertTrue($gen1->valid());
         $this->assertFalse($gen1->thrown());
 
@@ -187,26 +191,8 @@ class UtilsTest extends \Codeception\TestCase\Test {
         } catch (\RuntimeException $e) {
             $gen1->throw_($e);
         }
-
         $this->assertFalse($gen1->valid());
         $this->assertTrue($gen1->thrown());
-    }
-
-    public function testComplicated()
-    {
-        $genfunc = function () {
-            $x = yield function () {
-                yield CoInterface::RETURN_WITH => function () {
-                    return function () {
-                        yield CoInterface::RETURN_WITH => 3;
-                    };
-                    yield null;
-                };
-            };
-            $y = yield 2;
-            return $x + $y;
-        };
-        $this->assertFalse(true);
     }
 
     public function testGetYieldables()

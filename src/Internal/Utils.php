@@ -22,20 +22,7 @@ class Utils {
     public static function normalize($value, CoOption $options, $yield_key = null)
     {
         while ($value instanceof \Closure) {
-            try {
-                $value = $value();
-            } catch (\RuntimeException $e) {
-                if ($yield_key === CoInterface::SAFE) {
-                    $options = $options->reconfigure(['throw' => false]);
-                }
-                if ($yield_key === CoInterface::UNSAFE) {
-                    $options = $options->reconfigure(['throw' => true]);
-                }
-                if ($options['throw']) {
-                    throw $e;
-                }
-                return $e;
-            }
+            $value = $value();
         }
         if ($value instanceof \Generator) {
             return new GeneratorContainer($value, $options, $yield_key);

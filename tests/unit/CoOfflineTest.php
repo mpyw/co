@@ -45,17 +45,27 @@ class CoOfflineTest extends \Codeception\TestCase\Test {
 
         $genfunc = function () {
             $x = yield function () {
-                yield CoInterface::RETURN_WITH => function () {
-                    return function () {
-                        yield CoInterface::RETURN_WITH => 3;
+                yield Co::RETURN_WITH => yield function () {
+                    return yield function () {
+                        return 3;
+                        yield null;
                     };
                     yield null;
                 };
+                yield null;
             };
-            vd($x);
             $y = yield 2;
             return $x + $y;
         };
         $this->assertEquals(5, Co::wait($genfunc));
+
+        $genfunc = function () {
+            return array_sum(yield [
+                function () { return 7; yield null; },
+                function () { return 9; },
+                function () { yield null; return 13; },
+            ]);
+        };
+        $this->assertEquals(29, Co::wait($genfunc));
     }
 }

@@ -80,9 +80,10 @@ class GeneratorContainer
         try {
             $this->g->current();
             return $this->e === null && $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
-        } catch (\RuntimeException $e) { }
-        $this->e = $e;
-        return false;
+        } catch (\RuntimeException $e) {
+            $this->e = $e;
+            return false;
+        }
     }
 
     /**
@@ -131,7 +132,10 @@ class GeneratorContainer
     {
         $this->validateValidity();
         try {
-            $this->g->throw($value);
+            $this->g->key() === CoInterface::SAFE ||
+            $this->g->key() !== CoInterface::UNSAFE && !$this->options['throw']
+                ? $this->g->send($e)
+                : $this->g->throw($e);
         } catch (\RuntimeException $e) {
             $this->e = $e;
         }

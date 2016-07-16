@@ -123,17 +123,19 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
 
     public function testExternalException()
     {
-        $genfunc = function () {
+        $gen = (function () {
+            $this->assertInstanceOf(\RuntimeException::class, yield null);
             yield null;
-            yield null;
-        };
-        $gen = $genfunc();
+        })();
         $con = new GeneratorContainer($gen, new CoOption(['throw' => false]));
         $con->throw_(new \RuntimeException);
-        $this->assertFalse($con->valid());
+        $this->assertTrue($con->valid());
         $this->assertFalse($con->thrown());
-        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
-        $gen = $genfunc();
+
+        $gen = (function () {
+            yield null;
+            yield null;
+        })();
         $con = new GeneratorContainer($gen);
         $con->throw_(new \RuntimeException);
         $this->assertFalse($con->valid());
