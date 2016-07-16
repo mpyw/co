@@ -131,7 +131,9 @@ class Co implements CoInterface
                     !$gc->thrown() ? $deferred->resolve($r) : $deferred->reject($r);
                 }
             } catch (\RuntimeException $e) {
-                !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+                if ($deferred) {
+                    !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
+                }
             }
             return;
         }
