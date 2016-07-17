@@ -128,7 +128,8 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
             yield null;
         })();
         $con = new GeneratorContainer($gen, new CoOption(['throw' => false]));
-        $con->throw_(new \RuntimeException);
+        $this->assertFalse($con->throwAcceptable());
+        $con->throwAcceptable() ? $con->throw_(new \RuntimeException) : $con->send(new \RuntimeException);
         $this->assertTrue($con->valid());
         $this->assertFalse($con->thrown());
 
@@ -137,7 +138,8 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
             yield null;
         })();
         $con = new GeneratorContainer($gen);
-        $con->throw_(new \RuntimeException);
+        $this->assertTrue($con->throwAcceptable());
+        $con->throwAcceptable() ? $con->throw_(new \RuntimeException) : $con->send(new \RuntimeException);
         $this->assertFalse($con->valid());
         $this->assertTrue($con->thrown());
         $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());

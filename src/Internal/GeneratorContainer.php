@@ -132,13 +132,17 @@ class GeneratorContainer
     {
         $this->validateValidity();
         try {
-            $this->g->key() === CoInterface::SAFE ||
-            $this->g->key() !== CoInterface::UNSAFE && !$this->options['throw']
-                ? $this->g->send($e)
-                : $this->g->throw($e);
+            $this->g->throw($e);
         } catch (\RuntimeException $e) {
             $this->e = $e;
         }
+    }
+
+    public function throwAcceptable()
+    {
+        $this->validateValidity();
+        return $this->g->key() === CoInterface::UNSAFE ||
+               $this->g->key() !== CoInterface::SAFE && $this->options['throw'];
     }
 
     /**

@@ -125,15 +125,47 @@ class Co implements CoInterface
     private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred = null)
     {
         if (!$gc->valid()) {
+            if ($gc->thrown()) {
+                $deferred->reject($gc->getReturnOrThrown());
+                return;
+            }
             try {
-                $r = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
-                if ($deferred) {
-                    !$gc->thrown() ? $deferred->resolve($r) : $deferred->reject($r);
+                $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
+                $yieldables = Utils::getYieldables($returned);
+                if ($yieldables) {
+                    $promises = [];
+                    foreach ($yieldables as $yieldable) {
+                        $dfd = new Deferred;
+                        $promises[(string)$yieldable['value']] = $dfd->promise();
+                        if (Utils::isCurl($yieldable['value'])) {
+                            $this->pool->addOrEnqueue($yieldable['value'], $dfd);
+                            continue;
+                        }
+                        if (Utils::isGeneratorContainer($yieldable['value'])) {
+                            $this->processGeneratorContainer($yieldable['value'], $dfd);
+                            continue;
+                        }
+                    }
+                    all($promises)->then(
+                        function (array $results) use ($deferred, $returned, $yieldables) {
+                            foreach ($results as $hash => $resolved) {
+                                $current = &$returned;
+                                foreach ($yieldables[$hash]['keylist'] as $key) {
+                                    $current = &$current[$key];
+                                }
+                                $current = $resolved;
+                            }
+                            $deferred->resolve($returned);
+                        },
+                        function (\RuntimeException $e) use ($gc) {
+                            $deferred->reject($e);
+                        }
+                    );
+                    return;
                 }
+                $deferred && $deferred->resolve($returned);
             } catch (\RuntimeException $e) {
-                if ($deferred) {
-                    !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
-                }
+                $deferred && $deferred->reject($e);
             }
             return;
         }
@@ -141,9 +173,8 @@ class Co implements CoInterface
         try {
             $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
         } catch (\RuntimeException $e) {
-            if ($deferred) {
-                !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
-            }
+            $gc->throwAcceptable() ? $gc->throw_($e) : $gc->send($e);
+            $this->processGeneratorContainer($gc, $deferred);
             return;
         }
 
@@ -158,15 +189,15 @@ class Co implements CoInterface
         foreach ($yieldables as $yieldable) {
             $dfd = new Deferred;
             $promises[(string)$yieldable['value']] = $dfd->promise();
+            if (!$gc->throwAcceptable()) {
+                $original_dfd = $dfd;
+                $dfd = new Deferred;
+                $absorber = function ($any) use ($original_dfd) {
+                    $original_dfd->resolve($any);
+                };
+                $dfd->promise()->then($absorber, $absorber);
+            }
             if (Utils::isCurl($yieldable['value'])) {
-                if (!$gc->getOptions()['throw']) {
-                    $original_dfd = $dfd;
-                    $dfd = new Deferred;
-                    $absorber = function ($any) use ($original_dfd) {
-                        $original_dfd->resolve($any);
-                    };
-                    $dfd->promise()->then($absorber, $absorber);
-                }
                 $this->pool->addOrEnqueue($yieldable['value'], $dfd);
                 continue;
             }
@@ -177,7 +208,7 @@ class Co implements CoInterface
         }
 
         all($promises)->then(
-            function (array $results) use ($gc, $yielded, $yieldables, $deferred) {
+            function (array $results) use ($gc, $yielded, $yieldables) {
                 foreach ($results as $hash => $resolved) {
                     $current = &$yielded;
                     foreach ($yieldables[$hash]['keylist'] as $key) {
@@ -186,12 +217,13 @@ class Co implements CoInterface
                     $current = $resolved;
                 }
                 $gc->send($yielded);
-                $this->processGeneratorContainer($gc, $deferred);
             },
-            function (\RuntimeException $e) use ($gc, $deferred) {
-                if ($deferred) {
-                    !$gc->getOptions()['throw'] ? $deferred->resolve($e) : $deferred->reject($e);
-                }
+            function (\RuntimeException $e) use ($gc) {
+                $gc->throw_($e);
+            }
+        )->always(
+            function () use ($gc, $deferred) {
+                $this->processGeneratorContainer($gc, $deferred);
             }
         );
     }

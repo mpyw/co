@@ -90,9 +90,9 @@ class CURLPool
                 $r = $entry['result'] === CURLE_OK
                     ? curl_multi_getcontent($entry['handle'])
                     : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
-                if (isset($this->deferreds[(string)$entry['result']])) {
-                    $deferred = $this->deferreds[(string)$entry['result']];
-                    unset($this->deferreds[(string)$entry['result']]);
+                if (isset($this->deferreds[(string)$entry['handle']])) {
+                    $deferred = $this->deferreds[(string)$entry['handle']];
+                    unset($this->deferreds[(string)$entry['handle']]);
                     $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
                 }
             }

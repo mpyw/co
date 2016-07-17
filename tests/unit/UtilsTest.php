@@ -178,7 +178,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
             Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
             $this->assertFalse(true);
         } catch (\RuntimeException $e) {
-            $gen1->throw_($e);
+            $gen1->throwAcceptable() ? $gen1->throw_($e) : $gen1->send($e);
         }
         $this->assertTrue($gen1->valid());
         $this->assertFalse($gen1->thrown());
@@ -189,7 +189,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
             Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
             $this->assertFalse(true);
         } catch (\RuntimeException $e) {
-            $gen1->throw_($e);
+            $gen1->throwAcceptable() ? $gen1->throw_($e) : $gen1->send($e);
         }
         $this->assertFalse($gen1->valid());
         $this->assertTrue($gen1->thrown());

@@ -60,11 +60,11 @@ class CoOfflineTest extends \Codeception\TestCase\Test {
         $this->assertEquals(5, Co::wait($genfunc));
 
         $genfunc = function () {
-            return array_sum(yield [
-                function () { return 7; yield null; },
-                function () { return 9; },
-                function () { yield null; return 13; },
-            ]);
+            return array_sum(array_map('current', yield [
+                [function () { return 7; yield null; }],
+                [function () { return 9; }],
+                [function () { yield null; return 13; }],
+            ]));
         };
         $this->assertEquals(29, Co::wait($genfunc));
     }

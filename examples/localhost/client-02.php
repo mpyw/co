@@ -7,7 +7,7 @@ require __DIR__ . '/client-init.php';
 
 // Wait 5 sec
 print_time();
-$result = unwrap(Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
+$result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
     // Wait 3 sec
     print_r(unwrap(yield Co::SAFE => [
         curl('/rest', ['id' => 2, 'sleep' => 3]),
@@ -28,18 +28,18 @@ $result = unwrap(Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function ()
             throw new \LogicException('Unreachable here: A');
         },
         function () {
-            var_dump(yield Co::SAFE => function () {
+            print_r(unwrap(yield Co::SAFE => function () {
                 throw new \RuntimeException('03');
-            });
+            }));
             return 'Reachable here: B';
         }
     ]));
-    var_dump(yield Co::SAFE => function () {
+    print_r(yield Co::SAFE => function () {
         yield Co::UNSAFE => curl('/invalid');
         throw new \LogicException('Unreachable here: C');
     });
     // Wait 1 sec
     return curl('/rest', ['id' => 4, 'sleep' => 1]);
-}], ['interval' => 0]));
+}], ['interval' => 0]);
 print_r($result);
 print_time();
