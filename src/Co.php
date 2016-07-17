@@ -7,6 +7,7 @@ use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\CURLPool;
 
 use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 use function React\Promise\all;
 
 class Co implements CoInterface
@@ -100,17 +101,21 @@ class Co implements CoInterface
     {
         $this->options = $options;
         $this->pool = new CURLPool($options);
+        // If $wait, final result is stored into referenced $return
         if ($wait) {
             $deferred = new Deferred;
             $deferred->promise()->done(function ($r) use (&$return) {
                 $return = $r;
             });
         }
+        // For convenience, all values are wrapped into generator
         $genfunc = function () use ($value) {
             yield CoInterface::RETURN_WITH => (yield $value);
         };
         $con = Utils::normalize($genfunc, $options);
+        // We have to provide deferred object only if $wait
         $this->processGeneratorContainer($con, $wait ? $deferred : null);
+        // We have to wait $return only if $wait
         if ($wait) {
             $this->pool->wait();
             return $return;
@@ -124,14 +129,18 @@ class Co implements CoInterface
      */
     private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred = null)
     {
+        // If generator has no more yields...
         if (!$gc->valid()) {
+            // If exception has been thrown in generator, we have to propagate it as rejected value
             if ($gc->thrown()) {
                 $deferred->reject($gc->getReturnOrThrown());
                 return;
             }
+            // Now we normalize returned value
             try {
                 $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
                 $yieldables = Utils::getYieldables($returned);
+                // If normalized value contains yieldables, we have to chain resolver
                 if ($yieldables) {
                     $this->promiseAll($yieldables, true)->then(
                         self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
@@ -139,36 +148,54 @@ class Co implements CoInterface
                     );
                     return;
                 }
+                // Propagate normalized returned value
                 $deferred && $deferred->resolve($returned);
             } catch (\RuntimeException $e) {
+                // Propagate exception thrown in normalization
                 $deferred && $deferred->reject($e);
             }
             return;
         }
 
+        // Now we normalize yielded value
         try {
             $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
         } catch (\RuntimeException $e) {
+            // If exception thrown in normalization...
+            //   - If generator accepts exception, we throw it into generator
+            //   - If generator does not accept exception, we assume it as non-exception value
             $gc->throwAcceptable() ? $gc->throw_($e) : $gc->send($e);
+            // Continue
             $this->processGeneratorContainer($gc, $deferred);
             return;
         }
 
+        // Search yieldables from yielded value
         $yieldables = Utils::getYieldables($yielded);
         if (!$yieldables) {
+            // If there are no yieldables, send yielded value back into generator
             $gc->send($yielded);
+            // Continue
             $this->processGeneratorContainer($gc, $deferred);
             return;
         }
 
+        // Chain resolver
         $this->promiseAll($yieldables, $gc->throwAcceptable())->then(
             self::getApplier($yielded, $yieldables, [$gc, 'send']),
             [$gc, 'throw_']
         )->always(function () use ($gc, $deferred) {
+            // Continue
             $this->processGeneratorContainer($gc, $deferred);
         });
     }
 
+    /**
+     * Return function that apply changes in yieldables.
+     * @param  mixed    $yielded
+     * @param  array    $yieldables
+     * @param  callable $next
+     */
     private static function getApplier($yielded, $yieldables, callable $next)
     {
         return function (array $results) use ($yielded, $yieldables, $next) {
@@ -183,12 +210,20 @@ class Co implements CoInterface
         };
     }
 
+    /**
+     * Promise all changes in yieldables are prepared.
+     * @param  arrya $yieldables
+     * @param  bool  $throw_acceptable
+     * @return PromiseInterface
+     */
     private function promiseAll($yieldables, $throw_acceptable)
     {
         $promises = [];
         foreach ($yieldables as $yieldable) {
             $dfd = new Deferred;
             $promises[(string)$yieldable['value']] = $dfd->promise();
+            // If caller cannot accept exception,
+            // we handle rejected value as resolved.
             if (!$throw_acceptable) {
                 $original_dfd = $dfd;
                 $dfd = new Deferred;
@@ -197,10 +232,12 @@ class Co implements CoInterface
                 };
                 $dfd->promise()->then($absorber, $absorber);
             }
+            // Add or enqueue cURL handles
             if (Utils::isCurl($yieldable['value'])) {
                 $this->pool->addOrEnqueue($yieldable['value'], $dfd);
                 continue;
             }
+            // Process generators
             if (Utils::isGeneratorContainer($yieldable['value'])) {
                 $this->processGeneratorContainer($yieldable['value'], $dfd);
                 continue;

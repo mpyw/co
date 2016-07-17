@@ -22,22 +22,29 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
             // Wait 1 sec
             echo yield curl('/rest', ['id' => 3, 'sleep' => 1]), "\n";
             print_time();
-            yield function () {
+            echo unwrap(yield function () {
                 throw new \RuntimeException('02');
+            }) . "\n";
+            throw new \LogicException('aaa');
+            yield Co::UNSAFE => function () {
+                throw new \RuntimeException('03');
             };
-            throw new \LogicException('Unreachable here: A');
+            return 'Unreachable';
         },
         function () {
-            print_r(unwrap(yield Co::SAFE => function () {
-                throw new \RuntimeException('03');
-            }));
-            return 'Reachable here: B';
+            echo unwrap(yield Co::SAFE => function () {
+                throw new \RuntimeException('04');
+            }) . "\n";
+            yield Co::UNSAFE => function () {
+                throw new \RuntimeException('05');
+            };
+            return 'Unreachable';
         }
     ]));
-    print_r(yield Co::SAFE => function () {
+    echo unwrap(yield Co::SAFE => function () {
         yield Co::UNSAFE => curl('/invalid');
-        throw new \LogicException('Unreachable here: C');
-    });
+        return 'Unreachable';
+    }) . "\n";
     // Wait 1 sec
     return curl('/rest', ['id' => 4, 'sleep' => 1]);
 }], ['interval' => 0]);
