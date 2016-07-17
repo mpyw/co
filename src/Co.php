@@ -133,33 +133,9 @@ class Co implements CoInterface
                 $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
                 $yieldables = Utils::getYieldables($returned);
                 if ($yieldables) {
-                    $promises = [];
-                    foreach ($yieldables as $yieldable) {
-                        $dfd = new Deferred;
-                        $promises[(string)$yieldable['value']] = $dfd->promise();
-                        if (Utils::isCurl($yieldable['value'])) {
-                            $this->pool->addOrEnqueue($yieldable['value'], $dfd);
-                            continue;
-                        }
-                        if (Utils::isGeneratorContainer($yieldable['value'])) {
-                            $this->processGeneratorContainer($yieldable['value'], $dfd);
-                            continue;
-                        }
-                    }
-                    all($promises)->then(
-                        function (array $results) use ($deferred, $returned, $yieldables) {
-                            foreach ($results as $hash => $resolved) {
-                                $current = &$returned;
-                                foreach ($yieldables[$hash]['keylist'] as $key) {
-                                    $current = &$current[$key];
-                                }
-                                $current = $resolved;
-                            }
-                            $deferred->resolve($returned);
-                        },
-                        function (\RuntimeException $e) use ($gc) {
-                            $deferred->reject($e);
-                        }
+                    $this->promiseAll($yieldables, true)->then(
+                        self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
+                        [$deferred, 'reject']
                     );
                     return;
                 }
@@ -185,11 +161,35 @@ class Co implements CoInterface
             return;
         }
 
+        $this->promiseAll($yieldables, $gc->throwAcceptable())->then(
+            self::getApplier($yielded, $yieldables, [$gc, 'send']),
+            [$gc, 'throw_']
+        )->always(function () use ($gc, $deferred) {
+            $this->processGeneratorContainer($gc, $deferred);
+        });
+    }
+
+    private static function getApplier($yielded, $yieldables, callable $next)
+    {
+        return function (array $results) use ($yielded, $yieldables, $next) {
+            foreach ($results as $hash => $resolved) {
+                $current = &$yielded;
+                foreach ($yieldables[$hash]['keylist'] as $key) {
+                    $current = &$current[$key];
+                }
+                $current = $resolved;
+            }
+            $next($yielded);
+        };
+    }
+
+    private function promiseAll($yieldables, $throw_acceptable)
+    {
         $promises = [];
         foreach ($yieldables as $yieldable) {
             $dfd = new Deferred;
             $promises[(string)$yieldable['value']] = $dfd->promise();
-            if (!$gc->throwAcceptable()) {
+            if (!$throw_acceptable) {
                 $original_dfd = $dfd;
                 $dfd = new Deferred;
                 $absorber = function ($any) use ($original_dfd) {
@@ -206,25 +206,6 @@ class Co implements CoInterface
                 continue;
             }
         }
-
-        all($promises)->then(
-            function (array $results) use ($gc, $yielded, $yieldables) {
-                foreach ($results as $hash => $resolved) {
-                    $current = &$yielded;
-                    foreach ($yieldables[$hash]['keylist'] as $key) {
-                        $current = &$current[$key];
-                    }
-                    $current = $resolved;
-                }
-                $gc->send($yielded);
-            },
-            function (\RuntimeException $e) use ($gc) {
-                $gc->throw_($e);
-            }
-        )->always(
-            function () use ($gc, $deferred) {
-                $this->processGeneratorContainer($gc, $deferred);
-            }
-        );
+        return all($promises);
     }
 }

@@ -21,17 +21,12 @@ class Utils {
      */
     public static function normalize($value, CoOption $options, $yield_key = null)
     {
-        if ($yield_key === CoInterface::SAFE) {
-            $options = $options->reconfigure(['throw' => false]);
-        }
-        if ($yield_key === CoInterface::UNSAFE) {
-            $options = $options->reconfigure(['throw' => true]);
-        }
         while ($value instanceof \Closure) {
             try {
                 $value = $value();
             } catch (\RuntimeException $value) {
-                if ($options['throw']) {
+                if ($yield_key === CoInterface::UNSAFE ||
+                    $yield_key !== CoInterface::SAFE && $options['throw']) {
                     throw $value;
                 }
             }
