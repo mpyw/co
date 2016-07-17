@@ -5,9 +5,8 @@ Asynchronous cURL executor simply based on resource and Generator
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
 | 7.0~ | :smile: | Full Support |
-| 5.5~5.6 | :grinning: | Generator is not so cool |
-| 5.3~5.4 | :cold_sweat: | No Generator |
-| ~5.2 | :boom: | Incompatible at all |
+| 5.6 | :grinning: | Generator is not so cool |
+| ~5.5 | :boom: | Incompatible |
 
 ```php
 function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true]) {

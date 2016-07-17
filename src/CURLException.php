@@ -2,24 +2,14 @@
 
 namespace mpyw\Co;
 
-/**
- * Asynchronous cURL executor simply based on resource and Generator.
- * http://github.com/mpyw/co
- *
- * @author mpyw
- * @license MIT
- */
-
 class CURLException extends \RuntimeException
 {
     private $handle;
 
     /**
      *  Constructor.
-     *
-     * @access public
-     * @param string $message
-     * @param int $code
+     * @param string   $message
+     * @param int      $code
      * @param resource $handle
      */
     public function __construct($message, $code, $handle)
@@ -30,8 +20,6 @@ class CURLException extends \RuntimeException
 
     /**
      * Get cURL handle.
-     *
-     * @access public
      * @return resource $handle
      */
     public function getHandle()

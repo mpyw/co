@@ -1,616 +1,248 @@
 <?php
 
 namespace mpyw\Co;
+use mpyw\Co\Internal\Utils;
+use mpyw\Co\Internal\CoOption;
+use mpyw\Co\Internal\GeneratorContainer;
+use mpyw\Co\Internal\CURLPool;
 
-/**
- * Asynchronous cURL executor simply based on resource and Generator.
- * http://github.com/mpyw/co
- *
- * @author mpyw
- * @license MIT
- */
+use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
+use function React\Promise\all;
 
-class Co
+class Co implements CoInterface
 {
-
     /**
-     * Special constants used for Generator yielding keys.
-     *
-     * @const Co::RETURN_WITH  Treat yielded value as returned value.
-     *                         This is for PHP 5.5 ~ 5.6.
-     * @const Co::UNSAFE       Allow current yield to throw Exceptions.
-     * @const Co::SAFE         Forbid current yield to throw Exceptions.
-     *                         Exceptions are just to be returned.
-     */
-    const RETURN_WITH = '__RETURN_WITH__';
-    const RETURN_ = '__RETURN_WITH__'; // alias
-    const RET = '__RETURN_WITH__'; // alias
-    const RTN = '__RETURN_WITH__'; // alias
-    const UNSAFE = '__UNSAFE__';
-    const SAFE = '__SAFE__';
-
-    /**
-     * Static default options.
-     */
-    private static $defaults = array(
-        'throw' => true, // Throw CURLExceptions?
-        'pipeline' => false, // Use HTTP/1.1 pipelining?
-        'multiplex' => true, // Use HTTP/2 multiplexing?
-        'interval' => 0.5, // curl_multi_select() timeout
-        'concurrency' => 6, // Limit of TCP connections
-    );
-
-    /**
-     * Execution instance is stored here.
+     * Instance of myself.
+     * @var Co
      */
     private static $self;
 
     /**
-     * Instance properties
-     *
-     * *Stack ID* means...
-     *   - Generator ID
-     *   - "wait" (Co::wait calls)
-     *   - "async" (Co::async calls)
+     * Options.
+     * @var CoOption
      */
-    private $options = array();
-    private $mh;                          // curl_multi_init()
-    private $count = 0;                   // count(curl_multi_add_handle called)
-    private $queue = array();             // cURL resources over concurrency limits are temporalily stored here
-    private $tree = array();              // array<*Stack ID*, mixed>
-    private $values = array();            // array<*Stack ID*|*cURL ID*, Generator|resource>
-    private $value_to_parent = array();   // array<*Stack ID*|*cURL ID*, *Stack ID*>
-    private $value_to_children = array(); // array<*Stack ID*, array<*Stack ID*|*cURL ID*, true>>
-    private $value_to_keylist = array();  // array<*Stack ID*|*cURL ID*, array<mixed>>
+    private $options;
 
     /**
-     * Override or get default settings.
-     *
-     * @access public
-     * @static
+     * cURL request pool object.
+     * @var CURLPool
+     */
+    private $pool;
+
+    /**
+     * Overwrite CoOption default.
      * @param array $options
      */
     public static function setDefaultOptions(array $options)
     {
-        self::$defaults = self::validateOptions($options);
+        CoOption::setDefault($options);
     }
+
+    /**
+     * Get CoOption default as array.
+     * @return array
+     */
     public static function getDefaultOptions()
     {
-        return self::$defaults;
+        return CoOption::getDefault();
     }
 
     /**
-     * Wait all cURL requests to be completed.
-     * Options override static defaults.
-     *
-     * @access public
-     * @static
-     * @param mixed $value
-     * @param array $options
-     * @see self::__construct()
+     * Wait until value is recursively resolved to return it.
+     * This function call must be atomic.
+     * @param  mixed $value
+     * @param  array $options
+     * @return mixed
      */
-    public static function wait($value, array $options = array())
+    public static function wait($value, array $options = [])
     {
-        $options = self::validateOptions($options) + self::$defaults;
-        // This function call must be atomic.
         try {
             if (self::$self) {
-                throw new \BadMethodCallException(
-                    'Co::wait() is already running. Use Co::async() instead.'
-                );
+                throw new \BadMethodCallException('Co::wait() is already running. Use Co::async() instead.');
             }
-            self::$self = new self($options);
-            if (self::$self->initialize($value, 'wait')) {
-                self::$self->run();
-            }
-            $result = self::$self->tree['wait'];
+            self::$self = new self;
+            return self::$self->start($value, new CoOption($options));
+        } finally {
             self::$self = null;
-            return $result;
-        } catch (\Throwable $e) { } catch (\Exception $e) { } // For both PHP7+ and PHP5
-        self::$self = null;
-        throw $e;
+        }
     }
 
     /**
-     * Parallel execution along with Co::async().
-     * This method is mainly expected to be used in CURLOPT_WRITEFUNCTION callback.
-     *
-     * @access public
-     * @static
-     * @param mixed $value
-     * @see self::__construct()
+     * Value is recursively resolved, but we never wait it.
+     * This function must be called along with Co::wait().
+     * @param  mixed $value
+     * @param  array $options
      */
-    public static function async($value)
+    public static function async($value, array $options = [])
     {
-        // This function must be called along with Co::wait().
         if (!self::$self) {
             throw new \BadMethodCallException(
                 'Co::async() must be called along with Co::wait(). ' .
                 'This method is mainly expected to be used in CURLOPT_WRITEFUNCTION callback.'
             );
         }
-        self::$self->initialize($value, 'async');
+        self::$self->start($value, self::$self->options->reconfigure($options), false);
     }
 
     /**
-     * Internal constructor.
-     *
-     * @access private
-     * @param array $options
-     * @see self::initialize(), self::run()
+     * External instantiation is forbidden.
      */
-    private function __construct(array $options)
+    private function __construct() {}
+
+    /**
+     * Start resovling.
+     * @param  mixed    $value
+     * @param  CoOption $options
+     * @param  bool     $wait
+     * @param  mixed    If $wait, return resolved value.
+     */
+    private function start($value, CoOption $options, $wait = true)
     {
-        $this->mh = curl_multi_init();
-        if (function_exists('curl_multi_setopt')) {
-            $flags = ($options['pipeline'] ? 1 : 0) | ($options['multiplex'] ? 2 : 0);
-            curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
-        }
         $this->options = $options;
-    }
-
-    /**
-     * Call curl_multi_add_handle or push into waiting queue.
-     *
-     * @access private
-     * @param resource $curl
-     */
-    private function enqueue($curl)
-    {
-        if (!$this->options['concurrency'] || $this->count < $this->options['concurrency']) {
-            // If within concurrency limit...
-            if (CURLM_OK !== $errno = curl_multi_add_handle($this->mh, $curl)) {
-                $msg = curl_multi_strerror($errno) . ": $curl";
-                $class = $errno === 7 || $errno === CURLE_FAILED_INIT
-                    ? 'InvalidArgumentException'
-                    : 'RuntimeException'
-                ;
-                throw new $class($msg);
-            }
-            ++$this->count;
-        } else {
-            // Else...
-            if (isset($this->queue[(string)$curl])) {
-                throw new \InvalidArgumentException("The cURL resource is already enqueued: $curl");
-            }
-            $this->queue[(string)$curl] = $curl;
+        $this->pool = new CURLPool($options);
+        // If $wait, final result is stored into referenced $return
+        if ($wait) {
+            $deferred = new Deferred;
+            $deferred->promise()->done(function ($r) use (&$return) {
+                $return = $r;
+            });
+        }
+        // For convenience, all values are wrapped into generator
+        $genfunc = function () use ($value) {
+            yield CoInterface::RETURN_WITH => (yield $value);
+        };
+        $con = Utils::normalize($genfunc, $options);
+        // We have to provide deferred object only if $wait
+        $this->processGeneratorContainer($con, $wait ? $deferred : null);
+        // We have to wait $return only if $wait
+        if ($wait) {
+            $this->pool->wait();
+            return $return;
         }
     }
 
     /**
-     * Set or overwrite tree of return values.
-     *
-     * @access private
-     * @param mixed $value mixed
-     * @param string $parent_hash *Stack ID*
-     * @param array $keylist Queue of keys for its hierarchy.
+     * Handle resolving generators.
+     * @param  GeneratorContainer $gc
+     * @param  Deferred           $deferred
      */
-    private function setTree($value, $parent_hash, array $keylist = array())
+    private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred = null)
     {
-        $current = &$this->tree[$parent_hash];
-        while (null !== $key = array_shift($keylist)) {
-            if (!is_array($current)) {
-                $current = array();
-            }
-            $current = &$current[$key];
-        }
-        $current = $value;
-    }
-
-    /**
-     * Unset tree of return values.
-     *
-     * @access private
-     * @param string $hash *Stack ID* or *cURL ID*
-     */
-    private function unsetTree($hash)
-    {
-        if (isset($this->tree[$hash])) {
-            foreach (self::flatten($this->tree[$hash]) as $v) {
-                if (self::isGenerator($v)) {
-                    $this->unsetTree(spl_object_hash($v));
-                }
-            }
-            unset($this->tree[$hash]);
-        }
-    }
-
-    /**
-     * Set table of dependencies.
-     *
-     * @access private
-     * @param Generator|resource $value
-     * @param string $parent_hash *Stack ID* or *cURL ID*
-     * @param array $keylist Queue of keys for its hierarchy.
-     */
-    private function setTable($value, $parent_hash, array $keylist = array())
-    {
-        $hash = is_object($value) ? spl_object_hash($value) : (string)$value;
-        $this->values[$hash] = $value;
-        $this->value_to_parent[$hash] = $parent_hash;
-        $this->value_to_children[$parent_hash][$hash] = true;
-        $this->value_to_keylist[$hash] = $keylist;
-    }
-
-    /**
-     * Unset table of dependencies.
-     *
-     * @access private
-     * @param string $hash *Stack ID* or *cURL ID*
-     */
-    private function unsetTable($hash)
-    {
-        $parent_hash = $this->value_to_parent[$hash];
-        // Clear self table.
-        unset($this->queue[$hash]);
-        unset($this->values[$hash]);
-        unset($this->value_to_parent[$hash]);
-        unset($this->value_to_keylist[$hash]);
-        // Clear descendants tables.
-        // (This is required for cases that
-        //  some cURL resources are abondoned because of Exceptions thrown)
-        if (isset($this->value_to_children[$hash])) {
-            foreach ($this->value_to_children[$hash] as $child => $_) {
-                $this->unsetTable($child);
-            }
-            unset($this->value_to_children[$hash]);
-        }
-        // Clear reference from ancestor table.
-        if (isset($this->value_to_children[$parent_hash][$hash])) {
-            unset($this->value_to_children[$parent_hash][$hash]);
-        }
-    }
-
-    /**
-     * Run curl_multi_exec() loop.
-     *
-     * @access private
-     * @see self::updateCurl(), self::enqueue()
-     */
-    private function run()
-    {
-        curl_multi_exec($this->mh, $active); // Start requests.
-        do {
-            curl_multi_select($this->mh, $this->options['interval']); // Wait events.
-            curl_multi_exec($this->mh, $active); // Update resources.
-            // NOTE: DO NOT call curl_multi_remove_handle
-            //       or curl_multi_add_handle while looping curl_multi_info_read!
-            $entries = array();
-            do if ($entry = curl_multi_info_read($this->mh, $remains)) {
-                $entries[] = $entry;
-            } while ($remains);
-            // Remove done and consume queue.
-            foreach ($entries as $entry) {
-                curl_multi_remove_handle($this->mh, $entry['handle']);
-                --$this->count;
-                if ($curl = array_shift($this->queue)) {
-                    $this->enqueue($curl);
-                }
-            }
-            // Update cURL and Generator stacks.
-            foreach ($entries as $entry) {
-                $this->updateCurl($entry['handle'], $entry['result']);
-            }
-        } while ($this->count > 0 || $this->queue);
-        // All request must be done when reached here.
-        if ($active) {
-            throw new \LogicException('Unreachable statement.');
-        }
-    }
-
-    /**
-     * Unset table of dependencies.
-     *
-     * @access private
-     * @param mixed $value
-     * @param string $parent_hash  *Stack ID* or *cURL ID*
-     * @param array $keylist       Queue of keys for its hierarchy.
-     * @return bool                Enqueued?
-     */
-    private function initialize($value, $parent_hash, array $keylist = array())
-    {
-        $value = self::normalize($value);
-        // Array or Traversable
-        if (self::isArrayLike($value)) {
-            $this->setTree($value, $parent_hash, $keylist);
-            $enqueued = false;
-            foreach ($value as $k => $v) {
-                // Append current key and call recursively
-                $tmp_keylist = $keylist;
-                $tmp_keylist[] = $k;
-                $enqueued = $this->initialize($v, $parent_hash, $tmp_keylist) || $enqueued;
-            }
-            return $enqueued;
-        }
-        // Generator
-        if (self::isGenerator($value)) {
-            $hash = spl_object_hash($value);
-            if (isset($this->values[$hash])) {
-                throw new \InvalidArgumentException("The Genertor is already running: #$hash");
-            }
-            $this->setTree($value, $parent_hash, $keylist);
-            while (self::isGeneratorRunning($value)) {
-                $current = self::normalize($value->current());
-                // Call recursively
-                $enqueued = $this->initialize($current, $hash);
-                if ($enqueued) { // If cURL resource found?
-                    $this->setTable($value, $parent_hash, $keylist);
-                    return true;
-                }
-                // Search more...
-                $value->send($current);
-            }
-            $value = self::getGeneratorReturn($value);
-            // Replace current tree with new value
-            $this->unsetTree($hash);
-            return $this->initialize($value, $parent_hash, $keylist);
-        }
-        // cURL resource
-        if (self::isCurl($value)) {
-            $this->enqueue($value);
-            $this->setTree($value, $parent_hash, $keylist);
-            $this->setTable($value, $parent_hash, $keylist);
-            return true;
-        }
-        // Other
-        $this->setTree($value, $parent_hash, $keylist);
-        return false;
-    }
-
-    /**
-     * Update tree with cURL result.
-     *
-     * @access private
-     * @param resource $value
-     * @param int $errno
-     * @see self::updateGenerator()
-     */
-    private function updateCurl($value, $errno)
-    {
-        $hash = (string)$value;
-        if (!isset($this->values[$hash])) {
-            return;
-        }
-        $parent_hash = $this->value_to_parent[$hash]; // *Stack ID*
-        $parent = isset($this->values[$parent_hash]) ? $this->values[$parent_hash] : null; // Generator or null
-        $keylist = $this->value_to_keylist[$hash];
-        $result =
-            $errno === CURLE_OK
-            ? curl_multi_getcontent($value)
-            : new CURLException(curl_error($value), $errno, $value)
-        ;
-        $this->setTree($result, $parent_hash, $keylist);
-        $this->unsetTable($hash);
-        if ($errno !== CURLE_OK && $parent && $this->canThrow($parent)) {// Error and is to be thrown into Generator?
-            $this->unsetTree($hash); // No more needed
-            $parent->throw($result);
-            $this->updateGenerator($parent);
-        } elseif ($errno !== CURLE_OK && !$parent && $this->options['throw']) { // Error and is to be thrown globally?
-            $this->unsetTree($hash); // No more needed
-            throw $result;
-        } elseif ($parent_hash === 'async') { // Co::async() complete?
-            $this->unsetTree($hash); // No more needed
-        } elseif ($parent && !$this->value_to_children[$parent_hash]) { // Generator complete?
-            $this->unsetTree($hash); // No more needed
-            $result = $this->tree[$parent_hash];
-            $parent->send($result);
-            $this->updateGenerator($parent);
-        }
-    }
-
-    /**
-     * Check current Generator can throw a CURLException.
-     *
-     * @access private
-     * @param Generator $value
-     * @return bool
-     */
-    private function canThrow(\Generator $value)
-    {
-        while (true) {
-            $key = $value->key();
-            if ($key === self::SAFE) {
-                return false;
-            }
-            if ($key === self::UNSAFE) {
-                return true;
-            }
-            $parent_hash = $this->value_to_parent[spl_object_hash($value)];
-            if (!isset($this->values[$parent_hash])) {
-                return $this->options['throw'];
-            }
-            $value = $this->values[$parent_hash];
-        }
-    }
-
-    /**
-     * Update tree with updateCurl() result.
-     *
-     * @access private
-     * @param Generator $value
-     */
-    private function updateGenerator(\Generator $value)
-    {
-        $hash = spl_object_hash($value);
-        if (!isset($this->values[$hash])) {
-            return;
-        }
-        while (self::isGeneratorRunning($value)) {
-            $current = self::normalize($value->current());
-            $enqueued = $this->initialize($current, $hash);
-            if ($enqueued) { // cURL resource found?
+        // If generator has no more yields...
+        if (!$gc->valid()) {
+            // If exception has been thrown in generator, we have to propagate it as rejected value
+            if ($gc->thrown()) {
+                $deferred->reject($gc->getReturnOrThrown());
                 return;
             }
-            // Search more...
-            $value->send($current);
-        }
-        $value = self::getGeneratorReturn($value);
-        $parent_hash = $this->value_to_parent[$hash];
-        $parent = isset($this->values[$parent_hash]) ? $this->values[$parent_hash] : null;
-        $keylist = $this->value_to_keylist[$hash];
-        $this->unsetTable($hash);
-        $this->unsetTree($hash);
-        $enqueued = $this->initialize($value, $parent_hash, $keylist);
-        if (!$enqueued && $parent && !$this->value_to_children[$parent_hash]) { // Generator complete?
-            // Traverse parent stack.
-            $next = $this->tree[$parent_hash];
-            $this->unsetTree($parent_hash);
-            $parent->send($next);
-            $this->updateGenerator($parent);
-        }
-    }
-
-    /**
-     * Validate options.
-     *
-     * @access private
-     * @static
-     * @param array $options
-     * @return array
-     */
-    private static function validateOptions(array $options)
-    {
-        foreach ($options as $key => $value) {
-            if (in_array($key, array('throw', 'pipeline', 'multiplex'), true)) {
-                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, array(
-                    'flags' => FILTER_NULL_ON_FAILURE,
-                ));
-                if ($value === null) {
-                    throw new \InvalidArgumentException("Option[$key] must be boolean.");
+            // Now we normalize returned value
+            try {
+                $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
+                $yieldables = Utils::getYieldables($returned);
+                // If normalized value contains yieldables, we have to chain resolver
+                if ($yieldables) {
+                    $this->promiseAll($yieldables, true)->then(
+                        self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
+                        [$deferred, 'reject']
+                    );
+                    return;
                 }
-            } elseif ($key === 'interval') {
-                $value = filter_var($value, FILTER_VALIDATE_FLOAT);
-                if ($value === false || $value < 0.0) {
-                    throw new \InvalidArgumentException("Option[interval] must be positive float or zero.");
-                }
-            } elseif ($key === 'concurrency') {
-                $value = filter_var($value, FILTER_VALIDATE_INT);
-                if ($value === false || $value < 0) {
-                    throw new \InvalidArgumentException("Option[concurrency] must be positive integer or zero.");
-                }
-            } else {
-                throw new \InvalidArgumentException("Unknown option: $key");
+                // Propagate normalized returned value
+                $deferred && $deferred->resolve($returned);
+            } catch (\RuntimeException $e) {
+                // Propagate exception thrown in normalization
+                $deferred && $deferred->reject($e);
             }
-            $options[$key] = $value;
+            return;
         }
-        return $options;
-    }
 
-    /**
-     * Normalize value.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return miexed
-     */
-    private static function normalize($value)
-    {
-        while ($value instanceof \Closure) {
-            $value = $value();
+        // Now we normalize yielded value
+        try {
+            $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
+        } catch (\RuntimeException $e) {
+            // If exception thrown in normalization...
+            //   - If generator accepts exception, we throw it into generator
+            //   - If generator does not accept exception, we assume it as non-exception value
+            $gc->throwAcceptable() ? $gc->throw_($e) : $gc->send($e);
+            // Continue
+            $this->processGeneratorContainer($gc, $deferred);
+            return;
         }
-        if (self::isArrayLike($value)
-            && !is_array($value)
-            && !$value->valid()) {
-            $value = array();
+
+        // Search yieldables from yielded value
+        $yieldables = Utils::getYieldables($yielded);
+        if (!$yieldables) {
+            // If there are no yieldables, send yielded value back into generator
+            $gc->send($yielded);
+            // Continue
+            $this->processGeneratorContainer($gc, $deferred);
+            return;
         }
-        return $value;
+
+        // Chain resolver
+        $this->promiseAll($yieldables, $gc->throwAcceptable())->then(
+            self::getApplier($yielded, $yieldables, [$gc, 'send']),
+            [$gc, 'throw_']
+        )->always(function () use ($gc, $deferred) {
+            // Continue
+            $this->processGeneratorContainer($gc, $deferred);
+        });
     }
 
     /**
-     * Check if a Generator is running.
-     * This method supports psuedo return with Co::RETURN_WITH.
-     *
-     * @access private
-     * @static
-     * @param Generator $value
-     * @return bool
+     * Return function that apply changes in yieldables.
+     * @param  mixed    $yielded
+     * @param  array    $yieldables
+     * @param  callable $next
      */
-    private static function isGeneratorRunning(\Generator $value)
+    private static function getApplier($yielded, $yieldables, callable $next)
     {
-        $value->current();
-        return $value->valid() && $value->key() !== self::RETURN_WITH; // yield Co::RETURN_WITH => XX
+        return function (array $results) use ($yielded, $yieldables, $next) {
+            foreach ($results as $hash => $resolved) {
+                $current = &$yielded;
+                foreach ($yieldables[$hash]['keylist'] as $key) {
+                    $current = &$current[$key];
+                }
+                $current = $resolved;
+            }
+            $next($yielded);
+        };
     }
 
     /**
-     * Get return value from a Generator.
-     * This method supports psuedo return with Co::RETURN_WITH.
-     *
-     * @access private
-     * @static
-     * @param Generator $value
-     * @return bool
+     * Promise all changes in yieldables are prepared.
+     * @param  arrya $yieldables
+     * @param  bool  $throw_acceptable
+     * @return PromiseInterface
      */
-    private static function getGeneratorReturn(\Generator $value)
+    private function promiseAll($yieldables, $throw_acceptable)
     {
-        $value->current();
-        if ($value->valid() && $value->key() === self::RETURN_WITH) {  // yield Co::RETURN_WITH => XX
-            return $value->current();
-        }
-        if ($value->valid()) {
-            throw new \LogicException('Unreachable statement.');
-        }
-        return method_exists($value, 'getReturn') ? $value->getReturn() : null;
-    }
-
-    /**
-     * Check if value is a valid cURL resource.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isCurl($value)
-    {
-        return is_resource($value) && get_resource_type($value) === 'curl';
-    }
-
-    /**
-     * Check if value is a valid Generator.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isGenerator($value)
-    {
-        return $value instanceof \Generator;
-    }
-
-    /**
-     * Check if value is a valid array or Traversable, not a Generator.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isArrayLike($value)
-    {
-        return $value instanceof \Traversable && !$value instanceof \Generator
-               || is_array($value);
-    }
-
-    /**
-     * Flatten an array or a Traversable.
-     *
-     * @access private
-     * @static
-     * @param mixed $value
-     * @return array
-     */
-    private static function flatten($value, array &$carry = array())
-    {
-        if (!self::isArrayLike($value)) {
-            $carry[] = $value;
-        } else {
-            foreach ($value as $v) {
-                self::flatten($v, $carry);
+        $promises = [];
+        foreach ($yieldables as $yieldable) {
+            $dfd = new Deferred;
+            $promises[(string)$yieldable['value']] = $dfd->promise();
+            // If caller cannot accept exception,
+            // we handle rejected value as resolved.
+            if (!$throw_acceptable) {
+                $original_dfd = $dfd;
+                $dfd = new Deferred;
+                $absorber = function ($any) use ($original_dfd) {
+                    $original_dfd->resolve($any);
+                };
+                $dfd->promise()->then($absorber, $absorber);
+            }
+            // Add or enqueue cURL handles
+            if (Utils::isCurl($yieldable['value'])) {
+                $this->pool->addOrEnqueue($yieldable['value'], $dfd);
+                continue;
+            }
+            // Process generators
+            if (Utils::isGeneratorContainer($yieldable['value'])) {
+                $this->processGeneratorContainer($yieldable['value'], $dfd);
+                continue;
             }
         }
-        return func_num_args() <= 1 ? $carry : null;
+        return all($promises);
     }
-
 }

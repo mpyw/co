@@ -10,6 +10,7 @@ function curl($path, array $q = array()) {
         CURLOPT_URL => "http://localhost:8080$path?" . http_build_query($q, '', '&'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
+        CURLOPT_FAILONERROR => true,
     ));
     return $ch;
 }
@@ -39,20 +40,15 @@ function print_time() {
     }
 }
 
-// Just for debugging
-function co_dump() {
-    static $reg_values = '@^  \["values":"mpyw\\\\Co\\\\Co":private\]=>\n  array\(\d+?\) {\n(.*?)\n  \}$@ms';
-    static $reg_gens = '@\["(\w+)"\]=>\s+object\(Generator\)#(\d+)@';
-    $r = new ReflectionProperty('mpyw\Co\Co', 'self');
-    $r->setAccessible(true);
-    ob_start();
-    var_dump($r->getValue());
-    $dumped = ob_get_clean();
-    if (preg_match($reg_values, $dumped, $m_value)) {
-        preg_match_all($reg_gens, $m_value[1], $m_gens, PREG_SET_ORDER);
-        foreach ($m_gens as $m_gen) {
-            $dumped = str_replace($m_gen[1], "Generator id #$m_gen[2]", $dumped);
-        }
+// Unwrap Exception message
+function unwrap($value) {
+    if (is_array($value)) {
+        return array_map(__FUNCTION__, $value);
     }
-    echo $dumped;
+    if (!$value instanceof \RuntimeException) {
+        return $value;
+    }
+    $class = get_class($value);
+    $message = $value->getMessage();
+    return "$class: $message";
 }
