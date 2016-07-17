@@ -154,7 +154,7 @@ Option priority:
 3. `throw` in `Co::wait()` options
 4. `throw` in static default options
 
-### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
+### Comparison with Generators of PHP7.0+ or PHP5.6
 
 #### `return` statements
 
@@ -166,7 +166,7 @@ yield $bar;
 return $baz;
 ```
 
-PHP5.5~5.6:
+PHP5.6:
 
 ```php
 yield $foo;
@@ -186,7 +186,7 @@ $a = yield $foo;
 echo yield $bar;
 ```
 
-PHP5.5~5.6:
+PHP5.6:
 
 ```php
 $a = (yield $foo);
