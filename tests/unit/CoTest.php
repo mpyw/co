@@ -32,7 +32,7 @@ class CoTest extends \Codeception\TestCase\Test {
         test::clean();
     }
 
-    public function testWaitGenerator()
+    public function testWaitBasic()
     {
         $this->assertEquals([1], Co::wait([1]));
 
@@ -69,7 +69,7 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->assertEquals(29, Co::wait($genfunc));
     }
 
-    public function testAsyncGenerator()
+    public function testAsyncBasic()
     {
         $i = 0;
         $genfunc = function () use (&$i) {
@@ -110,7 +110,35 @@ class CoTest extends \Codeception\TestCase\Test {
         ], $result);
     }
 
-    public function testClient01()
+    public function testRuntimeExceptionHandling()
+    {
+        $e = Co::wait(function () {
+            $e = yield function () {
+                throw new \RuntimeException;
+            };
+            $this->assertInstanceOf(\RuntimeException::class, $e);
+            return $e;
+        }, ['throw' => false]);
+        $this->assertInstanceOf(\RuntimeException::class, $e);
+        $this->setExpectedException(\RuntimeException::class);
+        Co::wait(function () {
+            yield function () {
+                throw new \RuntimeException;
+            };
+        });
+    }
+
+    public function testLogicExceptionHandling()
+    {
+        $this->setExpectedException(\LogicException::class);
+        Co::wait(function () {
+            yield function () {
+                throw new \LogicException;
+            };
+        }, ['throw' => false]);
+    }
+
+    public function testComplicated01()
     {
         $expected = ['Response[1]', 'Response[7]'];
         $actual = Co::wait([new DummyCurl('1', 7), function () {
@@ -119,7 +147,7 @@ class CoTest extends \Codeception\TestCase\Test {
             $actual = yield [new DummyCurl('2', 3), new DummyCurl('3', 4)];
             $this->assertEquals($expected, $actual);
 
-            $expected = ['Response[5]', 'Response[6]'];
+            $expected = ['Response[5]', ['x' => ['y' => 'Response[6]']]];
             $actual = yield [
                 function () {
                     $this->assertEquals('Response[4]', yield new DummyCurl('4', 1));
@@ -140,8 +168,88 @@ class CoTest extends \Codeception\TestCase\Test {
                     }]];
                 }
             ];
+            $this->assertEquals($expected, $actual);
+
             return new DummyCurl('7', 1);
+
         }]);
         $this->assertEquals($expected, $actual);
+    }
+
+    public function testComplicated02()
+    {
+        $expected = ['Response[1]', 'Response[4]'];
+        $actual = Co::wait([new DummyCurl('1', 5), function () {
+
+            $y = yield Co::SAFE => [
+                new DummyCurl('2', 3),
+                function () {
+                    throw new \RuntimeException('01');
+                },
+            ];
+            $this->assertEquals('Response[2]', $y[0]);
+            $this->assertInstanceOf(\RuntimeException::class, $y[1]);
+            $this->assertEquals('01', $y[1]->getMessage());
+
+            $y = yield Co::SAFE => [
+                function () {
+                    $this->assertEquals('Response[3]', yield new DummyCurl('3', 1));
+                    $y = yield function () {
+                        throw new \RuntimeException('02');
+                    };
+                    $this->assertInstanceOf(\RuntimeException::class, $y);
+                    $this->assertEquals('02', $y->getMessage());
+                    yield Co::UNSAFE => function () {
+                        throw new \RuntimeException('03');
+                    };
+                    $this->assertTrue(false);
+                },
+                function () {
+                    $y = yield function () {
+                        throw new \RuntimeException('04');
+                    };
+                    $this->assertInstanceOf(\RuntimeException::class, $y);
+                    $this->assertEquals('04', $y->getMessage());
+                    yield Co::UNSAFE => function () {
+                        throw new \RuntimeException('05');
+                    };
+                    $this->assertTrue(false);
+                }
+            ];
+            $y = yield Co::SAFE => function () {
+                yield Co::UNSAFE => function () {
+                    $y = yield Co::SAFE => function () {
+                        yield Co::UNSAFE => function () {
+                            yield new DummyCurl('invalid', 1, true);
+                        };
+                    };
+                    throw $y;
+                };
+            };
+            $this->assertInstanceOf(CURLException::class, $y);
+            $this->assertEquals('Error[invalid]', $y->getMessage());
+            return new DummyCurl('4', 1);
+        }]);
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testComplicatedAsync()
+    {
+        $async_results = [];
+        $sync_results = Co::wait([new DummyCurl('5', 1), function () use (&$async_results) {
+            Co::async(function () use (&$async_results) {
+                $async_results[] = yield new DummyCurl('2', 6);
+                Co::async(function () use (&$async_results) {
+                    $async_results[] = yield new DummyCurl('4', 4);
+                });
+                $async_results[] = yield new DummyCurl('3', 3);
+            });
+            Co::async(function () use (&$async_results) {
+                $async_results[] = yield new DummyCurl('1', 1);
+            });
+            return new DummyCurl('6', 2);
+        }]);
+        $this->assertEquals(['Response[5]', 'Response[6]'], $sync_results);
+        $this->assertEquals(['Response[1]', 'Response[2]', 'Response[3]', 'Response[4]'], $async_results);
     }
 }

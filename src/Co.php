@@ -62,7 +62,9 @@ class Co implements CoInterface
                 throw new \BadMethodCallException('Co::wait() is already running. Use Co::async() instead.');
             }
             self::$self = new self;
-            return self::$self->start($value, new CoOption($options));
+            self::$self->options = new CoOption($options);
+            self::$self->pool = new CURLPool(self::$self->options);
+            return self::$self->start($value);
         } finally {
             self::$self = null;
         }
@@ -82,7 +84,7 @@ class Co implements CoInterface
                 'This method is mainly expected to be used in CURLOPT_WRITEFUNCTION callback.'
             );
         }
-        self::$self->start($value, self::$self->options->reconfigure($options), false);
+        self::$self->start($value, false);
     }
 
     /**
@@ -93,31 +95,34 @@ class Co implements CoInterface
     /**
      * Start resovling.
      * @param  mixed    $value
-     * @param  CoOption $options
      * @param  bool     $wait
      * @param  mixed    If $wait, return resolved value.
      */
-    private function start($value, CoOption $options, $wait = true)
+    private function start($value, $wait = true)
     {
-        $this->options = $options;
-        $this->pool = new CURLPool($options);
-        // If $wait, final result is stored into referenced $return
-        if ($wait) {
-            $deferred = new Deferred;
-            $deferred->promise()->done(function ($r) use (&$return) {
+        $return = $exception = null;
+        $deferred = new Deferred;
+        $deferred->promise()->then(
+            function ($r) use (&$return) {
                 $return = $r;
-            });
-        }
+            },
+            function ($e) use (&$exception) {
+                $exception = $e;
+            }
+        );
         // For convenience, all values are wrapped into generator
         $genfunc = function () use ($value) {
             yield CoInterface::RETURN_WITH => (yield $value);
         };
-        $con = Utils::normalize($genfunc, $options);
+        $con = Utils::normalize($genfunc, $this->options);
         // We have to provide deferred object only if $wait
-        $this->processGeneratorContainer($con, $wait ? $deferred : null);
+        $this->processGeneratorContainer($con, $deferred);
         // We have to wait $return only if $wait
         if ($wait) {
             $this->pool->wait();
+            if ($exception) {
+                throw $exception;
+            }
             return $return;
         }
     }
@@ -127,13 +132,13 @@ class Co implements CoInterface
      * @param  GeneratorContainer $gc
      * @param  Deferred           $deferred
      */
-    private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred = null)
+    private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred)
     {
         // If generator has no more yields...
         if (!$gc->valid()) {
             // If exception has been thrown in generator, we have to propagate it as rejected value
             if ($gc->thrown()) {
-                $deferred && $deferred->reject($gc->getReturnOrThrown());
+                $deferred->reject($gc->getReturnOrThrown());
                 return;
             }
             // Now we normalize returned value
@@ -149,10 +154,10 @@ class Co implements CoInterface
                     return;
                 }
                 // Propagate normalized returned value
-                $deferred && $deferred->resolve($returned);
+                $deferred->resolve($returned);
             } catch (\RuntimeException $e) {
                 // Propagate exception thrown in normalization
-                $deferred && $deferred->reject($e);
+                $deferred->reject($e);
             }
             return;
         }
