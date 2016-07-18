@@ -13,13 +13,55 @@ use AspectMock\Test as test;
 class FinalBossTest extends \Codeception\TestCase\Test {
     use \Codeception\Specify;
 
-    public function testICannotDefeatThisBug()
+    public function testICannotDefeatThisBug1()
     {
-        $e = Co::wait(function () {
-            yield Co::UNSAFE => function () {
+        $result = Co::wait(function () {
+            $something = yield Co::SAFE => function () {
                 new \RuntimeException;
             };
+            if ($something === null) {
+                return 'OMFG';
+            }
         }, ['throw' => false]);
-        $this->assertInstanceOf(\RuntimeException::class, $e);
+        $this->assertNotEquals('OMFG', $result);
+    }
+    
+    public function testICannotDefeatThisBug2()
+    {
+        $result = Co::wait(function () {
+            $something = yield Co::UNSAFE => function () {
+                new \RuntimeException;
+            };
+            if ($something === null) {
+                return 'OMFG';
+            }
+        }, ['throw' => false]);
+        $this->assertNotEquals('OMFG', $result);
+    }
+    
+    public function testICannotDefeatThisBug3()
+    {
+        $result = Co::wait(function () {
+            $something = yield Co::SAFE => function () {
+                new \RuntimeException;
+            };
+            if ($something === null) {
+                return 'OMFG';
+            }
+        }, ['throw' => true]);
+        $this->assertNotEquals('OMFG', $result);
+    }
+    
+    public function testICannotDefeatThisBug4()
+    {
+        $result = Co::wait(function () {
+            $something = yield Co::UNSAFE => function () {
+                new \RuntimeException;
+            };
+            if ($something === null) {
+                return 'OMFG';
+            }
+        }, ['throw' => true]);
+        $this->assertNotEquals('OMFG', $result);
     }
 }
