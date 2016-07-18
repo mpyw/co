@@ -73,19 +73,22 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 
 | Key | Default | Description |
 |:---:|:---:|:---|
-| `throw` | **`true`** | Whether to throw `CURLException` on cURL errors. |
-| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />PHP 5.5+, libcurl 7.16.0+ are required. |
-| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP 5.5+ `--with-nghttp2`, libcurl 7.43.0+ are required. |
+| `throw` | **`true`** | Whether to throw or capture `CURLException` on cURL errors.<br />Whether to propagate or capture `RuntimeException` thrown in Generator.|
+| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ are required. |
+| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
 | `interval` | **`0.5`** | `curl_multi_select()` timeout seconds.<br />All events are observed in this span. |
 | `concurrency` | **`6`** | cURL execution pool size.<br />Larger value will be recommended if you use pipelining or multiplexing. |
 
 #### Return Value
 
-**`(mixed)`**<br />Resolved values; it may contain `CURLException` within Exception-safe mode.
+**`(mixed)`**<br />Resolved values; Within Exception-safe mode, it may contain...
+
+- `CURLException` which has been raised internally.
+- `RuntimeException` which has been raised by user.
 
 #### Exception
 
-- Throws `CURLException` on Exception-unsafe mode.
+- Throws `CURLException` or `RuntimeException` on Exception-unsafe mode.
 
 ### Co::async()
 
@@ -107,7 +110,7 @@ static Co::async(mixed $value) : mixed
 
 #### Exception
 
-- Throws `CURLException` within Exception-unsafe mode.
+- Throws `CURLException` or `RuntimeException` on Exception-unsafe mode.
 
 ### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
@@ -129,9 +132,9 @@ The rules will be applied recursively.
 | Before | After |
 |:---:|:----:|
 |cURL resource|`curl_multi_getconent()` result or `CURLException`|
-|`Traversable`<br />(Excluding Generator) | Array |
-|Function | Return value |
-|Generator | Return value (After all yields done) |
+|`Traversable`<br />(Excluding Generator) | Array or `RuntimeException`|
+|Function | Return value or `RuntimeException`|
+|Generator | Return value (After all yields done) or `RuntimeException`|
 
 ### Exception-safe or Exception-unsafe priority
 
