@@ -146,6 +146,20 @@ class CoTest extends \Codeception\TestCase\Test {
         });
     }
 
+    public function testRuntimeExceptionHandlingOnResolvingReturnedFunction()
+    {
+        $result = Co::wait(function () {
+            return 3 + yield Co::UNSAFE => function () {
+                yield;
+                return function () {
+                    throw new \RuntimeException(2);
+                };
+            };
+        }, ['throw' => false]);
+        $this->assertInstanceOf(\RuntimeException::class, $result);
+        $this->assertEquals($result->getMessage(), 2);
+    }
+
     public function testLogicExceptionHandling()
     {
         $this->setExpectedException(\LogicException::class);
