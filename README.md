@@ -5,7 +5,7 @@ Asynchronous cURL executor simply based on resource and Generator
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
 | 7.0~ | :smile: | Full Support |
-| 5.6 | :grinning: | Generator is not so cool |
+| 5.6 | :anguished: | Generator is not so cool |
 | ~5.5 | :boom: | Incompatible |
 
 ```php
@@ -43,12 +43,7 @@ The requests are executed as parallelly as possible :smile:
 Install via Composer.
 
 ```sh
-# I only need the library!
-composer require mpyw/co:@dev
-
-# I need both the library and utils for testing.
-# composer require mpyw/co:@dev
-# composer install
+composer require mpyw/co:^1.0
 ```
 
 And require Composer autoloader in your scripts.
@@ -192,8 +187,3 @@ PHP5.6:
 $a = (yield $foo);
 echo (yield $bar);
 ```
-
-## Todos
-
-- Tests
-- Fix bugs
