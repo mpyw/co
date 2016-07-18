@@ -1,5 +1,9 @@
 <?php
 
+require_once __DIR__ . '/DummyCurl.php';
+require_once __DIR__ . '/DummyCurlMulti.php';
+require_once __DIR__ . '/DummyCurlFunctions.php';
+
 use mpyw\Co\Co;
 use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\CoOption;
@@ -17,10 +21,14 @@ class CoTest extends \Codeception\TestCase\Test {
 
     public function _before()
     {
+        test::double('mpyw\Co\Internal\Utils', ['isCurl' => function ($arg) {
+            return $arg instanceof \DummyCurl;
+        }]);
     }
 
     public function _after()
     {
+        test::clean();
     }
 
     public function testWaitGenerator()
@@ -77,6 +85,27 @@ class CoTest extends \Codeception\TestCase\Test {
 
     public function testWaitCurl()
     {
-
+        $result = Co::wait([
+            'A' => new DummyCurl('A', 2),
+            [
+                'B' => new DummyCurl('B', 3),
+            ],
+            [
+                [
+                    'C' => new DummyCurl('C', 2),
+                ]
+            ]
+        ]);
+        $this->assertEquals([
+            'A' => 'Response[A]',
+            [
+                'B' => 'Response[B]',
+            ],
+            [
+                [
+                    'C' => 'Response[C]',
+                ],
+            ],
+        ], $result);
     }
 }

@@ -2,6 +2,8 @@
 
 class DummyCurl
 {
+    private $multiHandle;
+
     private $identifier;
     private $cost;
     private $reservedErrno;
@@ -10,13 +12,25 @@ class DummyCurl
 
     private $counter = 0;
     private $read = false;
-    private $response;
-    private $errno;
-    private $errstr;
+    private $response = '';
+    private $errno = -1;
+    private $errstr = '';
+    private $startedAt = -1;
+    private $stoppedAt = -1;
+
+    public function setMultiHandle(DummyCurlMulti $mh)
+    {
+        $this->multiHandle = $mh;
+    }
+
+    public function getMultiHandle(DummyCurlMulti $mh)
+    {
+        return $this->multiHandle;
+    }
 
     public function __construct(string $identifier, int $cost, bool $error = false)
     {
-        assert($cost > 1);
+        assert($cost > 0);
         $this->identifier = "DummyCurl[$identifier]";
         $this->cost = $cost;
         if (!$error) {
@@ -38,6 +52,8 @@ class DummyCurl
         $this->response = '';
         $this->errno = 0;
         $this->errstr = '';
+        $this->startedAt = -1;
+        $this->stoppedAt = -1;
     }
 
     public function __toString()
@@ -75,10 +91,13 @@ class DummyCurl
         return $this->counter === 0;
     }
 
-    public function consumeCost()
+    public function update(int $exec_count)
     {
         assert($this->counter > 0);
-        if (--$this->counter === 0) {
+        if ($this->startedAt === -1) {
+            $this->startedAt = $exec_count;
+        } elseif (--$this->counter === 0) {
+            $this->stoppedAt = $exec_count;
             $this->response = $this->reservedResponse;
             $this->errno = $this->reservedErrno;
             $this->errstr = $this->reservedErrstr;
@@ -93,5 +112,15 @@ class DummyCurl
     public function alreadyRead()
     {
         return $this->read;
+    }
+
+    public function startedAt()
+    {
+        return $this->startedAt;
+    }
+
+    public function stoppedAt()
+    {
+        return $this->stoppedAt;
     }
 }
