@@ -3,6 +3,7 @@
 class DummyCurlMulti
 {
     private $pool = [];
+    private $execCount = 0;
 
     public function addHandle($ch)
     {
@@ -24,12 +25,13 @@ class DummyCurlMulti
         $active = false;
         foreach ($this->pool as $ch) {
             if ($ch->prepared() || $ch->running()) {
-                $ch->consumeCost();
+                $ch->update($this->execCount);
                 if ($ch->running()) {
                     $active = true;
                 }
             }
         }
+        ++$this->execCount;
     }
 
     public function infoRead()
