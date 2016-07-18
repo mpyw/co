@@ -57,6 +57,9 @@ class Co implements CoInterface
      */
     public static function wait($value, array $options = [])
     {
+        // @codeCoverageIgnoreStart
+        // Coverage analyzer does not support...
+        //   try { return; } finally { }
         try {
             if (self::$self) {
                 throw new \BadMethodCallException('Co::wait() is already running. Use Co::async() instead.');
@@ -68,6 +71,7 @@ class Co implements CoInterface
         } finally {
             self::$self = null;
         }
+        // @codeCoverageIgnoreEnd
     }
 
     /**

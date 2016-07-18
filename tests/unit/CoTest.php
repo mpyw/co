@@ -36,17 +36,17 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         try {
             $this->assertTrue(Proxy::get(CoOption::class)->getStatic('defaults')['throw']);
-            CoOption::setDefault(['throw' => false]);
+            Co::setDefaultOptions(['throw' => false]);
             $this->assertFalse(Proxy::get(CoOption::class)->getStatic('defaults')['throw']);
         } finally {
-            CoOption::setDefault(['throw' => true]);
+            Co::setDefaultOptions(['throw' => true]);
         }
     }
 
     public function testGetDefaultOptions()
     {
         $expected = Proxy::get(CoOption::class)->getStatic('defaults');
-        $actual = CoOption::getDefault();
+        $actual = Co::getDefaultOptions();
         $this->assertEquals($expected, $actual);
     }
 
@@ -136,13 +136,6 @@ class CoTest extends \Codeception\TestCase\Test {
             };
             $this->assertInstanceOf(\RuntimeException::class, $e);
             return $e;
-        }, ['throw' => false]);
-        $this->assertInstanceOf(\RuntimeException::class, $e);
-        $this->setExpectedException(\RuntimeException::class);
-        $e = Co::wait(function () {
-            return function () {
-                throw new \RuntimeException;
-            };
         }, ['throw' => false]);
         $this->assertInstanceOf(\RuntimeException::class, $e);
         $this->setExpectedException(\RuntimeException::class);
