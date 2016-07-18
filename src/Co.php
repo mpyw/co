@@ -54,10 +54,10 @@ class Co implements CoInterface
      * @param  mixed $value
      * @param  array $options
      * @return mixed
+     * @codeCoverageIgnore
      */
     public static function wait($value, array $options = [])
     {
-        // @codeCoverageIgnoreStart
         // Coverage analyzer does not support...
         //   try { return; } finally { }
         try {
@@ -71,7 +71,6 @@ class Co implements CoInterface
         } finally {
             self::$self = null;
         }
-        // @codeCoverageIgnoreEnd
     }
 
     /**
