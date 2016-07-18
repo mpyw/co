@@ -6,6 +6,7 @@ require_once __DIR__ . '/DummyCurlFunctions.php';
 
 use mpyw\Co\Co;
 use mpyw\Co\CoInterface;
+use mpyw\Co\CURLException;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\CURLPool;
 use mpyw\Privator\Proxy;
@@ -86,13 +87,13 @@ class CoTest extends \Codeception\TestCase\Test {
     public function testWaitCurl()
     {
         $result = Co::wait([
-            'A' => new DummyCurl('A', 2),
+            'A' => new DummyCurl('A', mt_rand(1, 10)),
             [
-                'B' => new DummyCurl('B', 3),
+                'B' => new DummyCurl('B', mt_rand(1, 10)),
             ],
             [
                 [
-                    'C' => new DummyCurl('C', 2),
+                    'C' => new DummyCurl('C', mt_rand(1, 10)),
                 ]
             ]
         ]);
@@ -107,5 +108,40 @@ class CoTest extends \Codeception\TestCase\Test {
                 ],
             ],
         ], $result);
+    }
+
+    public function testClient01()
+    {
+        $expected = ['Response[1]', 'Response[7]'];
+        $actual = Co::wait([new DummyCurl('1', 7), function () {
+
+            $expected = ['Response[2]', 'Response[3]'];
+            $actual = yield [new DummyCurl('2', 3), new DummyCurl('3', 4)];
+            $this->assertEquals($expected, $actual);
+
+            $expected = ['Response[5]', 'Response[6]'];
+            $actual = yield [
+                function () {
+                    $this->assertEquals('Response[4]', yield new DummyCurl('4', 1));
+                    return new DummyCurl('5', 1);
+                },
+                function () {
+                    $e = yield CO::SAFE => new DummyCurl('invalid-01', 1, true);
+                    $this->assertInstanceOf(CURLException::class, $e);
+                    $this->assertEquals('Error[invalid-01]', $e->getMessage());
+                    try {
+                        yield new DummyCurl('invalid-02', 1, true);
+                        $this->assertTrue(false);
+                    } catch (CURLException $e) {
+                        $this->assertEquals('Error[invalid-02]', $e->getMessage());
+                    }
+                    return ['x' => ['y' => function () {
+                        return new DummyCurl('6', 2);
+                    }]];
+                }
+            ];
+            return new DummyCurl('7', 1);
+        }]);
+        $this->assertEquals($expected, $actual);
     }
 }
