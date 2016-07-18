@@ -32,6 +32,24 @@ class CoTest extends \Codeception\TestCase\Test {
         test::clean();
     }
 
+    public function testSetDefaultOptions()
+    {
+        try {
+            $this->assertTrue(Proxy::get(CoOption::class)->getStatic('defaults')['throw']);
+            CoOption::setDefault(['throw' => false]);
+            $this->assertFalse(Proxy::get(CoOption::class)->getStatic('defaults')['throw']);
+        } finally {
+            CoOption::setDefault(['throw' => true]);
+        }
+    }
+
+    public function testGetDefaultOptions()
+    {
+        $expected = Proxy::get(CoOption::class)->getStatic('defaults');
+        $actual = CoOption::getDefault();
+        $this->assertEquals($expected, $actual);
+    }
+
     public function testWaitBasic()
     {
         $this->assertEquals([1], Co::wait([1]));
@@ -118,6 +136,13 @@ class CoTest extends \Codeception\TestCase\Test {
             };
             $this->assertInstanceOf(\RuntimeException::class, $e);
             return $e;
+        }, ['throw' => false]);
+        $this->assertInstanceOf(\RuntimeException::class, $e);
+        $this->setExpectedException(\RuntimeException::class);
+        $e = Co::wait(function () {
+            return function () {
+                throw new \RuntimeException;
+            };
         }, ['throw' => false]);
         $this->assertInstanceOf(\RuntimeException::class, $e);
         $this->setExpectedException(\RuntimeException::class);
@@ -251,5 +276,19 @@ class CoTest extends \Codeception\TestCase\Test {
         }]);
         $this->assertEquals(['Response[5]', 'Response[6]'], $sync_results);
         $this->assertEquals(['Response[1]', 'Response[2]', 'Response[3]', 'Response[4]'], $async_results);
+    }
+
+    public function testBadWaitCall()
+    {
+        $this->setExpectedException(\BadMethodCallException::class);
+        Co::wait(function () {
+            Co::wait(1);
+        });
+    }
+
+    public function testBadAsyncCall()
+    {
+        $this->setExpectedException(\BadMethodCallException::class);
+        Co::async(1);
     }
 }

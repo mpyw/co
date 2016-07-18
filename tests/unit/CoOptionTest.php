@@ -114,6 +114,9 @@ class CoOptionTest extends \Codeception\TestCase\Test {
         $this->assertEquals(self::$CoOption::validateBool('', 'no'), false);
         $this->assertEquals(self::$CoOption::validateBool('', '1'), true);
         $this->assertEquals(self::$CoOption::validateBool('', '0'), false);
+        $this->specify('invalid', function () {
+            self::$CoOption::validateBool('', []);
+        }, ['throws' => \InvalidArgumentException::class]);
     }
 
     public function testReconfigure()

@@ -68,9 +68,11 @@ class CURLPool
         }
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
+            // @codeCoverageIgnoreStart
             $msg = curl_multi_strerror($errno) . ": $ch";
             $deferred && $deferred->reject(new \RuntimeException($msg));
             return;
+            // @codeCoverageIgnoreEnd
         }
         $this->added[(string)$ch] = $ch;
         $deferred && $this->deferreds[(string)$ch] = $deferred;
@@ -98,7 +100,9 @@ class CURLPool
         } while ($this->added || $this->queue);
         // All request must be done when reached here.
         if ($active) {
+            // @codeCoverageIgnoreStart
             throw new \LogicException('Unreachable statement.');
+            // @codeCoverageIgnoreEnd
         }
     }
 
