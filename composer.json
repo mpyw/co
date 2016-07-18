@@ -24,7 +24,7 @@
     "require": {
         "php": ">=5.6.0",
         "lib-curl": ">=7.2.0",
-        "react/promise": "^2.4"
+        "mpyw/runtime-promise": "^1.0"
     },
     "require-dev": {
         "php": ">=7.0.0",
@@ -48,5 +48,25 @@
             ".*",
             "!/src/*"
         ]
-    }
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "mpyw/runtime-promise",
+                "version": "1.0",
+                "source": {
+                    "url": "https://github.com/mpyw/runtime-promise.git",
+                    "type": "git",
+                    "reference": "4241a89d83f1e4fc4bfb7ab7487a0ef0abc5a35f"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "mpyw\\RuntimePromise\\": "src/"
+                    },
+                    "files": ["src/functions_include.php"]
+                }
+            }
+        }
+    ]
 }

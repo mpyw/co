@@ -6,9 +6,9 @@ use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\CURLPool;
 
-use React\Promise\Deferred;
-use React\Promise\PromiseInterface;
-use function React\Promise\all;
+use mpyw\RuntimePromise\Deferred;
+use mpyw\RuntimePromise\PromiseInterface;
+use function mpyw\RuntimePromise\all;
 
 class Co implements CoInterface
 {

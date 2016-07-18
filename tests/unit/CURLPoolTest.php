@@ -11,7 +11,7 @@ use mpyw\Co\Internal\CURLPool;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 use AspectMock\Test as test;
-use React\Promise\Deferred;
+use mpyw\RuntimePromise\Deferred;
 
 /**
  * @requires PHP 7.0

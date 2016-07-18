@@ -4,7 +4,7 @@ namespace mpyw\Co\Internal;
 use mpyw\Co\Co;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\CURLException;
-use React\Promise\Deferred;
+use mpyw\RuntimePromise\Deferred;
 
 class CURLPool
 {
