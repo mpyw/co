@@ -8,31 +8,22 @@ use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 use AspectMock\Test as test;
 
-function vd(...$args)
-{
-    ob_start();
-    var_dump(...$args);
-    $data = ob_get_clean();
-    file_put_contents('php://stderr', "\n$data\n");
-}
-
 /**
  * @requires PHP 7.0
  */
-class CoOfflineTest extends \Codeception\TestCase\Test {
+class CoTest extends \Codeception\TestCase\Test {
     use \Codeception\Specify;
     private static $pool;
 
     public function _before()
     {
-        self::$pool = test::double([new CURLPool(new CoOption)]);
     }
 
     public function _after()
     {
     }
 
-    public function testSimple()
+    public function testWaitGenerator()
     {
         $this->assertEquals([1], Co::wait([1]));
 
@@ -67,5 +58,25 @@ class CoOfflineTest extends \Codeception\TestCase\Test {
             ]));
         };
         $this->assertEquals(29, Co::wait($genfunc));
+    }
+
+    public function testAsyncGenerator()
+    {
+        $i = 0;
+        $genfunc = function () use (&$i) {
+            Co::async(function () use (&$i) {
+                ++$i;
+            });
+            Co::async(function () use (&$i) {
+                ++$i;
+            });
+        };
+        Co::wait($genfunc);
+        $this->assertEquals($i, 2);
+    }
+
+    public function testWaitCurl()
+    {
+
     }
 }

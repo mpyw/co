@@ -21,16 +21,16 @@ class CURLPool
     private $mh;
 
     /**
-     * The number of dispatched cURL handle.
-     * @var int
-     */
-    private $count = 0;
-
-    /**
      * cURL handles those have not been dispatched.
      * @var array
      */
     private $queue = [];
+
+    /**
+     * cURL handles those have been already dispatched.
+     * @var array
+     */
+    private $added = [];
 
     /**
      * React Deferreds.
@@ -58,23 +58,22 @@ class CURLPool
      */
     public function addOrEnqueue($ch, $deferred = null)
     {
-        if ($this->count >= $this->options['concurrency']) {
-            if (isset($this->queue[(string)$ch])) {
-                throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
-            }
+        if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
+            throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
+        }
+        if (count($this->added) >= $this->options['concurrency']) {
             $this->queue[(string)$ch] = $ch;
-        } else {
-            $errno = curl_multi_add_handle($this->mh, $ch);
-            if ($errno !== CURLM_OK) {
-                $msg = curl_multi_strerror($errno) . ": $ch";
-                $class = $errno === 7 ? '\InvalidArgumentException' : '\RuntimeException';
-                throw new $class($msg);
-            }
-            ++$this->count;
+            $deferred and $this->deferreds[(string)$ch] = $deferred;
+            return;
         }
-        if ($deferred) {
-            $this->deferreds[(string)$ch] = $deferred;
+        $errno = curl_multi_add_handle($this->mh, $ch);
+        if ($errno !== CURLM_OK) {
+            $msg = curl_multi_strerror($errno) . ": $ch";
+            $deferred->reject(new \RuntimeException($msg));
+            return;
         }
+        $this->added[(string)$ch] = $ch;
+        $deferred and $this->deferreds[(string)$ch] = $deferred;
     }
 
     /**
@@ -96,7 +95,7 @@ class CURLPool
                     $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
                 }
             }
-        } while ($this->count > 0 || $this->queue);
+        } while ($this->added || $this->queue);
         // All request must be done when reached here.
         if ($active) {
             throw new \LogicException('Unreachable statement.');
@@ -115,7 +114,7 @@ class CURLPool
         }
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
-            --$this->count;
+            unset($this->added[(string)$entry['handle']]);
             if ($this->queue) {
                 $ch = array_shift($this->queue);
                 $this->addOrEnqueue($ch);
