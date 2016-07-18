@@ -44,7 +44,7 @@ class CoOption implements \ArrayAccess
 
     /**
      * Get default options.
-     * @param array $options
+     * @return array $options
      */
     public static function getDefault()
     {

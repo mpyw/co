@@ -17,7 +17,7 @@ class Utils {
      * @param  mixed    $value
      * @param  CoOption $options
      * @param  mixed    $yield_key
-     * @return miexed
+     * @return mixed
      */
     public static function normalize($value, CoOption $options, $yield_key = null)
     {

@@ -133,7 +133,7 @@ class Co implements CoInterface
         if (!$gc->valid()) {
             // If exception has been thrown in generator, we have to propagate it as rejected value
             if ($gc->thrown()) {
-                $deferred->reject($gc->getReturnOrThrown());
+                $deferred && $deferred->reject($gc->getReturnOrThrown());
                 return;
             }
             // Now we normalize returned value
@@ -212,7 +212,7 @@ class Co implements CoInterface
 
     /**
      * Promise all changes in yieldables are prepared.
-     * @param  arrya $yieldables
+     * @param  array $yieldables
      * @param  bool  $throw_acceptable
      * @return PromiseInterface
      */

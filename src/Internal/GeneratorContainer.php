@@ -8,7 +8,7 @@ class GeneratorContainer
 {
     /**
      * Generator.
-     * @var Generator
+     * @var \Generator
      */
     private $g;
 
@@ -20,7 +20,7 @@ class GeneratorContainer
 
     /**
      * Thrown exception.
-     * @var Throwable|Exception
+     * @var \Throwable|\Exception
      */
     private $e;
 

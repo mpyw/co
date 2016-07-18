@@ -63,17 +63,17 @@ class CURLPool
         }
         if (count($this->added) >= $this->options['concurrency']) {
             $this->queue[(string)$ch] = $ch;
-            $deferred and $this->deferreds[(string)$ch] = $deferred;
+            $deferred && $this->deferreds[(string)$ch] = $deferred;
             return;
         }
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
             $msg = curl_multi_strerror($errno) . ": $ch";
-            $deferred->reject(new \RuntimeException($msg));
+            $deferred && $deferred->reject(new \RuntimeException($msg));
             return;
         }
         $this->added[(string)$ch] = $ch;
-        $deferred and $this->deferreds[(string)$ch] = $deferred;
+        $deferred && $this->deferreds[(string)$ch] = $deferred;
     }
 
     /**
