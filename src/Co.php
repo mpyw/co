@@ -8,7 +8,6 @@ use mpyw\Co\Internal\CURLPool;
 
 use mpyw\RuntimePromise\Deferred;
 use mpyw\RuntimePromise\PromiseInterface;
-use function mpyw\RuntimePromise\all;
 
 class Co implements CoInterface
 {
@@ -251,6 +250,6 @@ class Co implements CoInterface
                 continue;
             }
         }
-        return all($promises);
+        return \mpyw\RuntimePromise\all($promises);
     }
 }

@@ -5,8 +5,8 @@ Asynchronous cURL executor simply based on resource and Generator
 | PHP | :question: | Feature Restriction |
 |:---:|:---:|:---:|
 | 7.0~ | :smile: | Full Support |
-| 5.6 | :anguished: | Generator is not so cool |
-| ~5.5 | :boom: | Incompatible |
+| 5.5~5.6 | :anguished: | Generator is not so cool |
+| ~5.4 | :boom: | Incompatible |
 
 ```php
 function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true]) {
@@ -152,7 +152,7 @@ Option priority:
 3. `throw` in `Co::wait()` options
 4. `throw` in static default options
 
-### Comparison with Generators of PHP7.0+ or PHP5.6
+### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
 
 #### `return` statements
 
@@ -164,7 +164,7 @@ yield $bar;
 return $baz;
 ```
 
-PHP5.6:
+PHP5.5~5.6:
 
 ```php
 yield $foo;
@@ -184,7 +184,7 @@ $a = yield $foo;
 echo yield $bar;
 ```
 
-PHP5.6:
+PHP5.5~5.6:
 
 ```php
 $a = (yield $foo);

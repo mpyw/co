@@ -13,6 +13,6 @@ interface CoInterface
 
     public static function setDefaultOptions(array $options);
     public static function getDefaultOptions();
-    public static function wait($value, array $options = array());
+    public static function wait($value, array $options = []);
     public static function async($value);
 }

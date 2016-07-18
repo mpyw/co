@@ -6,8 +6,9 @@ class CoOption implements \ArrayAccess
 {
     /**
      * Field types.
+     * @var array
      */
-    const TYPES = [
+    private static $types = [
         'throw' => 'Bool', // Throw CURLExceptions?
         'pipeline' => 'Bool', // Use HTTP/1.1 pipelining?
         'multiplex' => 'Bool', // Use HTTP/2 multiplexing?
@@ -121,10 +122,10 @@ class CoOption implements \ArrayAccess
     private static function validateOptions(array $options)
     {
         foreach ($options as $key => $value) {
-            if (!isset(self::TYPES[$key])) {
+            if (!isset(self::$types[$key])) {
                 throw new \InvalidArgumentException("Unknown option: $key");
             }
-            $validator = [__CLASS__, 'validate' . self::TYPES[$key]];
+            $validator = [__CLASS__, 'validate' . self::$types[$key]];
             $options[$key] = $validator($key, $value);
         }
         return $options;
