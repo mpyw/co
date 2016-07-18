@@ -25,7 +25,6 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
             echo unwrap(yield function () {
                 throw new \RuntimeException('02');
             }) . "\n";
-            throw new \LogicException('aaa');
             yield Co::UNSAFE => function () {
                 throw new \RuntimeException('03');
             };
@@ -39,7 +38,7 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
                 throw new \RuntimeException('05');
             };
             return 'Unreachable';
-        }
+        },
     ]));
     echo unwrap(yield Co::SAFE => function () {
         yield Co::UNSAFE => curl('/invalid');
