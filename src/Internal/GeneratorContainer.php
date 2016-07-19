@@ -138,6 +138,10 @@ class GeneratorContainer
         }
     }
 
+    /**
+     * Return whether generator accepts exceptions thrown.
+     * @return bool
+     */
     public function throwAcceptable()
     {
         $this->validateValidity();
