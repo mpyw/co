@@ -24,7 +24,7 @@ class CoOption implements \ArrayAccess
         'throw' => true,
         'pipeline' => false,
         'multiplex' => true,
-        'interval' => 0.5,
+        'interval' => 0.002,
         'concurrency' => 6,
     ];
 
