@@ -32,7 +32,7 @@ class GeneratorContainer
 
     /**
      * Constructor.
-     * @param Generator $g
+     * @param \Generator $g
      * @param CoOption  $options
      * @param mixed     $yield_key
      */
@@ -124,7 +124,7 @@ class GeneratorContainer
 
     /**
      * Throw exception into generator.
-     * @param RuntimeException $e
+     * @param \RuntimeException $e
      * @NOTE: This method returns nothing,
      *        while original generator returns something.
      */
