@@ -166,6 +166,17 @@ class Co implements CoInterface
 
         // Now we normalize yielded value
         try {
+            // Check delay request yields
+            if ($gc->key() === CoInterface::DELAY) {
+                $dfd = new Deferred;
+                $this->pool->addDelay($gc->current(), $dfd);
+                $dfd->promise()->then(function () use ($gc) {
+                    $gc->send(null);
+                })->always(function () use ($gc, $deferred) {
+                    $this->processGeneratorContainer($gc, $deferred);
+                });
+                return;
+            }
             $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
         } catch (\RuntimeException $e) {
             // If exception thrown in normalization...

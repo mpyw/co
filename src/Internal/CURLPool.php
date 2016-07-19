@@ -33,6 +33,12 @@ class CURLPool
     private $added = [];
 
     /**
+     * Delays to be ended at.
+     * @var array
+     */
+    private $untils = [];
+
+    /**
      * React Deferreds.
      * @var Deferred
      */
@@ -56,7 +62,7 @@ class CURLPool
      * @param resource $ch
      * @param Deferred $deferred
      */
-    public function addOrEnqueue($ch, $deferred = null)
+    public function addOrEnqueue($ch, Deferred $deferred = null)
     {
         if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
             throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
@@ -79,25 +85,50 @@ class CURLPool
     }
 
     /**
+     * Add delay.
+     * @param int      $time
+     * @param Deferred $deferred
+     */
+    public function addDelay($time, Deferred $deferred)
+    {
+        $time = filter_var($time, FILTER_VALIDATE_FLOAT);
+        if ($time === false || $time < 0) {
+            throw new \InvalidArgumentException('Delay must be positive number.');
+        }
+        $now = microtime(true);
+        $until = $now + $time;
+        $diff = $until - $now;
+        if ($diff <= 0.0) {
+            // @codeCoverageIgnoreStart
+            $deferred->resolve(null);
+            return;
+            // @codeCoverageIgnoreEnd
+        }
+        do {
+            $id = uniqid();
+        } while (isset($this->untils[$id]));
+        $this->untils[$id] = $until;
+        $this->deferreds[$id] = $deferred;
+    }
+
+    /**
      * Run curl_multi_exec() loop.
      */
     public function wait()
     {
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
-            curl_multi_select($this->mh, $this->options['interval']); // Wait events.
-            curl_multi_exec($this->mh, $active);
-            foreach ($this->readEntries() as $entry) {
-                $r = $entry['result'] === CURLE_OK
-                    ? curl_multi_getcontent($entry['handle'])
-                    : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
-                if (isset($this->deferreds[(string)$entry['handle']])) {
-                    $deferred = $this->deferreds[(string)$entry['handle']];
-                    unset($this->deferreds[(string)$entry['handle']]);
-                    $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
-                }
+            if ($this->added || $this->queue) {
+                // if cURL handle is running, use curl_multi_select()
+                curl_multi_select($this->mh, $this->options['interval']) < 0
+                && usleep($this->options['interval'] * 1000000);
+            } else {
+                // otherwise, just sleep until nearest time
+                $this->sleepUntilNearestTime();
             }
-        } while ($this->added || $this->queue);
+            curl_multi_exec($this->mh, $active);
+            $this->consumeCurlsAndUntils();
+        } while ($this->added || $this->queue || $this->untils);
         // All request must be done when reached here.
         if ($active) {
             // @codeCoverageIgnoreStart
@@ -107,15 +138,38 @@ class CURLPool
     }
 
     /**
-     * Read completed cURL handles.
-     * @return array
+     * Sleep at least required.
      */
-    private function readEntries()
+    private function sleepUntilNearestTime()
+    {
+        $now = microtime(true);
+        $min = null;
+        foreach ($this->untils as $id => $until) {
+            $diff = $now - $until;
+            if ($diff < 0) {
+                continue;
+            }
+            if ($min === null || $diff < $min) {
+                $min = $diff;
+            }
+        }
+        if ($min !== null) {
+            usleep($min * 1000000);
+        }
+    }
+
+    /**
+     * Consume completed cURL handles and delays.
+     */
+    private function consumeCurlsAndUntils()
     {
         $entries = [];
+        // First, we have to poll completed entries
+        // DO NOT call curl_multi_add_handle() until polling done
         while ($entry = curl_multi_info_read($this->mh)) {
             $entries[] = $entry;
         }
+        // Remove entry from multi handle to consume queue if available
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
@@ -124,6 +178,25 @@ class CURLPool
                 $this->addOrEnqueue($ch);
             }
         }
-        return $entries;
+        // Now we check specified delay time elapsed
+        foreach ($this->untils as $id => $until) {
+            $diff = $until - microtime(true);
+            if ($diff <= 0.0 && isset($this->deferreds[$id])) {
+                $deferred = $this->deferreds[$id];
+                unset($this->deferreds[$id], $this->untils[$id]);
+                $deferred->resolve(null);
+            }
+        }
+        // Finally, resolve cURL responses
+        foreach ($entries as $entry) {
+            $r = $entry['result'] === CURLE_OK
+                ? curl_multi_getcontent($entry['handle'])
+                : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
+            if (isset($this->deferreds[(string)$entry['handle']])) {
+                $deferred = $this->deferreds[(string)$entry['handle']];
+                unset($this->deferreds[(string)$entry['handle']]);
+                $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
+            }
+        }
     }
 }

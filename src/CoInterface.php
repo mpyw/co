@@ -10,6 +10,8 @@ interface CoInterface
     const RTN = '__RETURN_WITH__'; // alias
     const UNSAFE = '__UNSAFE__';
     const SAFE = '__SAFE__';
+    const DELAY = '__DELAY__';
+    const SLEEP = '__DELAY__'; // alias
 
     public static function setDefaultOptions(array $options);
     public static function getDefaultOptions();
