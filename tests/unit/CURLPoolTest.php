@@ -139,4 +139,40 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
             $pool->addOrEnqueue($ch);
         }
     }
+
+    public function testWaitCurlAndDelay()
+    {
+        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool->addOrEnqueue(new DummyCurl('A', 10), $a = new Deferred);
+        $pool->addDelay(1.3, $b = new Deferred);
+        $pool->addDelay(1.1, $c = new Deferred);
+        $pool->addDelay(1.2, $d = new Deferred);
+        $a->promise()->then(function () use (&$x) {
+            $x = microtime(true);
+        });
+        $b->promise()->then(function () use (&$y) {
+            $y = microtime(true);
+        });
+        $c->promise()->then(function () use (&$z) {
+            $z = microtime(true);
+        });
+        $d->promise()->then(function () use (&$w) {
+            $w = microtime(true);
+        });
+        $pool->wait();
+        $this->assertNotNull($x);
+        $this->assertNotNull($y);
+        $this->assertNotNull($z);
+        $this->assertNotNull($w);
+        $this->assertTrue($x < $z);
+        $this->assertTrue($z < $w);
+        $this->assertTrue($w < $y);
+    }
+
+    public function testInvalidDelay()
+    {
+        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $this->setExpectedException(\InvalidArgumentException::class);
+        $pool->addDelay([], new Deferred);
+    }
 }

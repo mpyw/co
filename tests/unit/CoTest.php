@@ -285,6 +285,35 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->assertEquals(['Response[1]', 'Response[2]', 'Response[3]', 'Response[4]'], $async_results);
     }
 
+    public function testDelay()
+    {
+        $results = Co::wait([
+            function () use (&$x1, &$y1) {
+                yield Co::DELAY => 0.5;
+                $x1 = microtime(true);
+                yield Co::DELAY => 1.5;
+                $y1 = microtime(true);
+                return true;
+            },
+            function () use (&$x2, &$y2) {
+                yield Co::DELAY => 0.6;
+                $x2 = microtime(true);
+                yield Co::DELAY => 0.7;
+                $y2 = microtime(true);
+                throw new \RuntimeException;
+            },
+        ], ['throw' => false]);
+        $this->assertNotNull($x1);
+        $this->assertNotNull($y1);
+        $this->assertNotNull($x2);
+        $this->assertNotNull($y2);
+        $this->assertTrue($x1 < $x2);
+        $this->assertTrue($x2 < $y2);
+        $this->assertTrue($y2 < $y1);
+        $this->assertTrue($results[0]);
+        $this->assertInstanceOf(\RuntimeException::class, $results[1]);
+    }
+
     public function testBadWaitCall()
     {
         $this->setExpectedException(\BadMethodCallException::class);
