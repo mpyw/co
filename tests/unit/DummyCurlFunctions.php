@@ -18,7 +18,9 @@ function curl_multi_add_handle(\DummyCurlMulti $mh, \DummyCurl $ch) {
 function curl_multi_remove_handle(\DummyCurlMulti $mh, \DummyCurl $ch) {
     return $mh->removeHandle($ch);
 }
-function curl_multi_select() { }
+function curl_multi_select() {
+    return -1;
+}
 function curl_multi_exec(\DummyCurlMulti $mh, &$active) {
     return $mh->exec($active);
 }
