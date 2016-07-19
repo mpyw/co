@@ -21,22 +21,71 @@ function get_xpath_async($url) {
 }
 
 var_dump(Co::wait([
+
+    'Delay 5 secs' => function () {
+        echo "[Delay] I start to have a pseudo-sleep in this coroutine for about 5 secs\n";
+        for ($i = 0; $i < 5; ++$i) {
+            yield Co::DELAY => 1;
+            if ($i < 4) {
+                printf("[Delay] %s\n", str_repeat('.', $i + 1));
+            }
+        }
+        echo "[Delay] Done!\n";
+    },
+
     "google.com HTML" => curl_init_with("https://google.com"),
+
     "Content-Length of github.com" => function () {
-        return strlen(yield curl_init_with("https://github.com"));
+        echo "[GitHub] I start to request for github.com to calculate Content-Length\n";
+        $content = yield curl_init_with("https://github.com");
+        echo "[GitHub] Done! Now I calculate length of contents\n";
+        return strlen($content);
     },
+
     "Save mpyw's Gravatar Image URL to local" => function () {
-        yield curl_init_with(
-            (yield get_xpath_async('https://github.com/mpyw'))
-                ->evaluate('string(//img[contains(@class,"avatar")]/@src)'),
-            [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]
-        );
-        return "Saved as /tmp/mpyw.png";
-    },
+        echo "[Gravatar] I start to request for github.com to get Gravatar URL\n";
+        $src = (yield get_xpath_async('https://github.com/mpyw'))
+                 ->evaluate('string(//img[contains(@class,"avatar")]/@src)');
+        echo "[Gravatar] Done! Now I download its data\n";
+        yield curl_init_with($src, [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]);
+        echo "[Gravatar] Done! Saved as /tmp/mpyw.png\n";
+    }
+
 ]));
 ```
 
-The requests are executed as parallelly as possible :smile:
+The requests are executed as parallelly as possible :smile:  
+Note that there are only **1 process** and **1 thread**.
+
+```Text
+[Delay] I start to have a pseudo-sleep in this coroutine for about 5 secs
+[GitHub] I start to request for github.com to calculate Content-Length
+[Gravatar] I start to request for github.com to get Gravatar URL
+[Delay] .
+[Delay] ..
+[GitHub] Done! Now I calculate length of contents
+[Gravatar] Done! Now I download its data
+[Delay] ...
+[Gravatar] Done! Saved as /tmp/mpyw.png
+[Delay] ....
+[Delay] Done!
+array(4) {
+  ["Delay 5 secs"]=>
+  NULL
+  ["google.com HTML"]=>
+  string(262) "<HTML><HEAD><meta http-equiv="content-type" content="text/html;charset=utf-8">
+<TITLE>302 Moved</TITLE></HEAD><BODY>
+<H1>302 Moved</H1>
+The document has moved
+<A HREF="https://www.google.co.jp/?gfe_rd=cr&amp;ei=XXXXXX">here</A>.
+</BODY></HTML>
+"
+  ["Content-Length of github.com"]=>
+  int(25534)
+  ["Save mpyw's Gravatar Image URL to local"]=>
+  NULL
+}
+```
 
 ## Installing
 
@@ -151,6 +200,15 @@ Option priority:
 2. `yield` in parent scope
 3. `throw` in `Co::wait()` options
 4. `throw` in static default options
+
+### Pseudo-sleep for each coroutine
+
+The following `yield` statements delay the coroutine processing.
+
+```php
+yield Co::DELAY => $seconds
+yield Co::SLEEP => $seconds  # Alias
+```
 
 ### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
 

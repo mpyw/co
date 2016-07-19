@@ -40,6 +40,6 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 7]), function () {
     ]);
     print_time();
     return curl('/rest', ['id' => 7, 'sleep' => 1]);
-}], ['interval' => 0]);
+}]);
 print_r($result);
 print_time();
