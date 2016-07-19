@@ -5,3 +5,9 @@ mpyw/co - changelog
 ------------------
 
 + First Release
+
+1.1.0 (2016-07-20)
+------------------
+
++ New feature Co::DELAY / Co::SLEEP
++ Changed default option value of "interval"
