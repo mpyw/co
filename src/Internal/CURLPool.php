@@ -145,8 +145,11 @@ class CURLPool
         $now = microtime(true);
         $min = null;
         foreach ($this->untils as $id => $until) {
-            $diff = $now - $until;
-            if ($diff < 0 || $min !== null && $diff >= $min) {
+            $diff = $until - $now;
+            if ($diff < 0) {
+                return;
+            }
+            if ($min !== null && $diff >= $min) {
                 continue;
             }
             $min = $diff;

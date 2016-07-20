@@ -1,6 +1,11 @@
 mpyw/co - changelog
 ===================
 
+1.1.2 (2016-07-20)
+------------------
+
++ Fix bug #12: `$diff = $now - $until;` will have no effect for sleeping 
+
 1.1.1 (2016-07-20)
 ------------------
 
