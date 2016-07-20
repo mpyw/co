@@ -102,7 +102,6 @@ class Co implements CoInterface
      */
     private function start($value, $wait = true)
     {
-        $return = $exception = null;
         $deferred = new Deferred;
         // For convenience, all values are wrapped into generator
         $genfunc = function () use ($value, &$return) {
