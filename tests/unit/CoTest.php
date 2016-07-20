@@ -327,4 +327,35 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->setExpectedException(\BadMethodCallException::class);
         Co::async(1);
     }
+
+    public function testUncaughtRuntimeExceptionInClosureParallelToInfiniteDelayLoop()
+    {
+        $this->setExpectedException(\RuntimeException::class);
+        Co::wait([
+            function () {
+                while (true) {
+                    yield Co::SLEEP => 0.1;
+                }
+            },
+            function () {
+                throw new \RuntimeException;
+            }
+        ]);
+    }
+
+    public function testUncaughtRuntimeExceptionInGeneratorParallelToInfiniteDelayLoop()
+    {
+        $this->setExpectedException(\RuntimeException::class);
+        Co::wait([
+            function () {
+                while (true) {
+                    yield Co::SLEEP => 0.1;
+                }
+            },
+            function () {
+                yield;
+                throw new \RuntimeException;
+            }
+        ]);
+    }
 }

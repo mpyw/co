@@ -45,6 +45,12 @@ class CURLPool
     private $deferreds = [];
 
     /**
+     * Used for halting loop.
+     * @var \RuntimeException
+     */
+    private $haltException;
+
+    /**
      * Constructor.
      * Initialize cURL multi handle.
      * @param CoOption $options
@@ -116,6 +122,7 @@ class CURLPool
      */
     public function wait()
     {
+        $this->halt = false;
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
             if ($this->added || $this->queue) {
@@ -128,13 +135,18 @@ class CURLPool
             }
             curl_multi_exec($this->mh, $active);
             $this->consumeCurlsAndUntils();
+            if ($this->haltException) {
+                throw $this->haltException;
+            }
         } while ($this->added || $this->queue || $this->untils);
-        // All request must be done when reached here.
-        if ($active) {
-            // @codeCoverageIgnoreStart
-            throw new \LogicException('Unreachable statement.');
-            // @codeCoverageIgnoreEnd
-        }
+    }
+
+    /**
+     * Used for halting loop.
+     */
+    public function reserveHaltException($e)
+    {
+        $this->haltException = $e;
     }
 
     /**

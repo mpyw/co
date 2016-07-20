@@ -1,13 +1,18 @@
 mpyw/co - changelog
 ===================
 
-1.0.0 (2016-07-19)
+1.1.1 (2016-07-20)
 ------------------
 
-+ First Release
++ Fix bug #11: Generator does not stop in spite of RuntimeException thrown into parent scope
 
 1.1.0 (2016-07-20)
 ------------------
 
 + New feature Co::DELAY / Co::SLEEP
 + Changed default option value of "interval"
+
+1.0.0 (2016-07-19)
+------------------
+
++ First Release

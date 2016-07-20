@@ -104,17 +104,13 @@ class Co implements CoInterface
     {
         $return = $exception = null;
         $deferred = new Deferred;
-        $deferred->promise()->then(
-            function ($r) use (&$return) {
-                $return = $r;
-            },
-            function ($e) use (&$exception) {
-                $exception = $e;
-            }
-        );
         // For convenience, all values are wrapped into generator
-        $genfunc = function () use ($value) {
-            yield CoInterface::RETURN_WITH => (yield $value);
+        $genfunc = function () use ($value, &$return) {
+            try {
+                $return = (yield $value);
+            } catch (\RuntimeException $e) {
+                $this->pool->reserveHaltException($e);
+            }
         };
         $con = Utils::normalize($genfunc, $this->options);
         // We have to provide deferred object only if $wait
@@ -122,9 +118,6 @@ class Co implements CoInterface
         // We have to wait $return only if $wait
         if ($wait) {
             $this->pool->wait();
-            if ($exception) {
-                throw $exception;
-            }
             return $return;
         }
     }
