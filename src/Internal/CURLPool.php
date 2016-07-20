@@ -122,7 +122,7 @@ class CURLPool
      */
     public function wait()
     {
-        $this->halt = false;
+        $this->haltException = false;
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
             if ($this->added || $this->queue) {
