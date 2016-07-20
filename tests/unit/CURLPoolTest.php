@@ -175,4 +175,13 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
         $this->setExpectedException(\InvalidArgumentException::class);
         $pool->addDelay([], new Deferred);
     }
+
+    public function testCurlWithoutDeferred()
+    {
+        $pool = new CURLPool(new CoOption);
+        $pool->addOrEnqueue(new DummyCurl('valid', 1));
+        $pool->addOrEnqueue(new DummyCurl('invalid', 1, true));
+        $pool->wait();
+        $this->assertTrue(true);
+    }
 }
