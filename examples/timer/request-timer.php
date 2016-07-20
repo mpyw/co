@@ -5,15 +5,9 @@ require __DIR__ . '/../../vendor/autoload.php';
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-class TerminatedException extends \RuntimeException {}
-
 Co::wait(function () {
-    try {
-        yield [timer($e), main()];
-    } catch (TerminatedException $_) {
-        $e = $_; // Since PHP Bug #72629, we need to assign caught exception to another variable.
-        var_dump('Terminated.');
-    }
+    $stop = false;
+    yield [timer($stop), main($stop)];
 });
 
 function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
@@ -23,24 +17,27 @@ function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
     return $ch;
 }
 
-function timer(&$e)
+function timer(&$stop)
 {
     $ms = 0;
     while (true) {
         yield CO::DELAY => 0.2;
-        if ($e) {
-            return;
-        }
+        if ($stop) break;
         $ms += 200;
         echo "[Timer]: $ms miliseconds passed\n";
     }
 }
 
-function main()
+function main(&$stop)
 {
+    echo "Started first requests...\n";
     var_dump(array_map('strlen', yield [
         'Content-Length of github.com' => curl_init_with('https://github.com/mpyw'),
         'Content-Length of twitter.com' => curl_init_with('https://twitter.com/mpyw'),
     ]));
-    throw new TerminatedException;
+    echo "Started second requests...\n";
+    var_dump(array_map('strlen', yield [
+        'Content-Length of example.com' => curl_init_with('http://example.com'),
+    ]));
+    $stop = true;
 }

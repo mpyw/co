@@ -130,7 +130,7 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 
 #### Return Value
 
-**`(mixed)`**<br />Resolved values; Within Exception-safe mode, it may contain...
+**`(mixed)`**<br />Resolved values; within Exception-safe mode, it may contain...
 
 - `CURLException` which has been raised internally.
 - `RuntimeException` which has been raised by user.
@@ -146,7 +146,7 @@ The options are inherited from `Co::wait()`.
 <ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
 
 ```php
-static Co::async(mixed $value) : mixed
+static Co::async(mixed $value) : null
 ```
 
 #### Arguments
@@ -174,8 +174,8 @@ static Co::getDefaultOptions() : array<string, mixed>
 
 ### Conversion on resolving
 
-The all values are resolved by the following rules.  
-Yielded values are also sent to the Generator.  
+The all yielded/returned values are resolved by the following rules.  
+Yielded values are also resent to the Generator.  
 The rules will be applied recursively.
 
 | Before | After |
@@ -248,3 +248,21 @@ PHP5.5~5.6:
 $a = (yield $foo);
 echo (yield $bar);
 ```
+
+## FAQ
+
+### How can I yield/return without resolving?
+
+Currently there are no options for supressing resolving.  
+In order to achieve it, you can simply wrap raw values in objects.
+
+```php
+Co::wait(function () {
+    $obj = yield (object)['curl' => curl_init()];
+    $curl = $obj['curl'];
+    assert(is_resource($curl)); // It is still cURL handle.
+});
+```
+
+Do you **REALLY** need new features such as `Co::RETURN_RAW`?  
+[Create new issue!](https://github.com/mpyw/co/issues)

@@ -5,12 +5,15 @@ require __DIR__ . '/../../vendor/autoload.php';
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true]) {
+function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
+{
     $ch = curl_init($url);
     curl_setopt_array($ch, $options);
     return $ch;
 }
-function get_xpath_async($url) {
+
+function get_xpath_async($url)
+{
     $dom = new \DOMDocument;
     @$dom->loadHTML(yield curl_init_with($url));
     return new \DOMXPath($dom);

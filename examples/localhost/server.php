@@ -3,16 +3,32 @@
 require __DIR__ . '/../../vendor/autoload.php';
 set_time_limit(0);
 declare(ticks = 1);
-pcntl_signal(SIGCHLD, "signal_handler");
+pcntl_signal(SIGCHLD, 'signal_handler');
 serve();
 
-function fsend($con, $data) {
+/**
+ * Erorr-safe fwrite().
+ * @param  resource $con
+ * @param  string $data
+ * @throws \RuntimeException
+ */
+function fsend($con, $data)
+{
     if (!@fwrite($con, $data)) {
         $error = error_get_last();
         throw new \RuntimeException($error['message']);
     }
 }
-function respond_rest($con, $status, $message, $content) {
+
+/**
+ * Respond to the REST endpoints.
+ * @param  resource $con
+ * @param  int      $status
+ * @param  string   $message
+ * @param  string   $content
+ */
+function respond_rest($con, $status, $message, $content)
+{
     try {
         $length = strlen($content);
         fsend($con, "HTTP/1.1 $status $message\r\n");
@@ -24,7 +40,16 @@ function respond_rest($con, $status, $message, $content) {
     }
     fclose($con);
 }
-function respond_streaming($con, $tick_function, $tick, $times) {
+
+/**
+ * Respond to the Streaming endpoints.
+ * @param  resource $con
+ * @param  int      $status
+ * @param  string   $message
+ * @param  string   $content
+ */
+function respond_streaming($con, $tick_function, $tick, $times)
+{
     try {
         fsend($con, "HTTP/1.1 200 OK\r\n");
         fsend($con, "Transfer-Encoding: chunked\r\n");
@@ -44,8 +69,11 @@ function respond_streaming($con, $tick_function, $tick, $times) {
     fclose($con);
 }
 
-/* Server launcher */
-function serve() {
+/**
+ * Launch HTTP server.
+ */
+function serve()
+{
     $socket = stream_socket_server("tcp://localhost:8080", $errno, $errstr);
     if (!$socket) {
         fwrite(STDERR, "[Server] $errstr($errno)\n");
@@ -54,19 +82,22 @@ function serve() {
     while (true) {
         $con = @stream_socket_accept($socket, -1);
         if (!$con) {
-            $err = error_get_last(); // どーなんだこれ strerror(EINTR)
-            if (strpos($err["message"], "Interrupted system call") !== false)
+            $err = error_get_last();
+            if (strpos($err['message'], 'Interrupted system call') !== false) {
                 continue;
-            fwrite(STDERR, "[Server] " . $err["message"] . "\n");
+            }
+            fwrite(STDERR, "[Server] $err[message]\n");
             exit(1);
         }
         if (-1 === $pid = pcntl_fork()) {
             fwrite(STDERR, "[Server] Failed to fork\n");
             exit(1);
         }
-        if ($pid) { // parent process
+        if ($pid) {
+            // parent process
             continue;
         }
+        // child process
         $endpoints = array(
             '/rest' => function ($con, $q) {
                 $sleep = isset($q['sleep']) ? (int)$q['sleep'] : 0;
@@ -101,13 +132,16 @@ function serve() {
     }
 }
 
-function signal_handler($sig) {
-    if ($sig === SIGCHLD) {
-        $ignore = NULL;
-        while (($rc = pcntl_waitpid(-1, $ignore, WNOHANG)) > 0) { }
-        if ($rc === -1 && pcntl_get_last_error() !== PCNTL_ECHILD) {
-            fwrite(STDERR, "waitpid() failed: " . pcntl_strerror(pcntl_get_last_error()) . "\n");
-            exit(1);
-        }
+function signal_handler($sig)
+{
+    if ($sig !== SIGCHLD) {
+        return;
     }
+    $ignore = NULL;
+    while (($rc = pcntl_waitpid(-1, $ignore, WNOHANG)) > 0);
+    if ($rc !== -1 || pcntl_get_last_error() === PCNTL_ECHILD) {
+        return;
+    }
+    fwrite(STDERR, 'waitpid() failed: ' . pcntl_strerror(pcntl_get_last_error()) . "\n");
+    exit(1);
 }

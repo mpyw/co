@@ -3,33 +3,49 @@
 require __DIR__ . '/../../vendor/autoload.php';
 set_time_limit(0);
 
-// REST API
-function curl($path, array $q = array()) {
+/**
+ * REST API
+ * @param  string $path
+ * @param  array  $q
+ * @return resource
+ */
+function curl($path, array $q = [])
+{
     $ch = curl_init();
-    curl_setopt_array($ch, array(
+    curl_setopt_array($ch, [
         CURLOPT_URL => "http://localhost:8080$path?" . http_build_query($q, '', '&'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_FAILONERROR => true,
-    ));
+    ]);
     return $ch;
 }
 
-// Streaming API
-function curl_streaming($path, $callback, array $q = array()) {
+/**
+ * Streaming API
+ * @param  string   $path
+ * @param  callable $callback
+ * @param  array    $q
+ * @return resource
+ */
+function curl_streaming($path, callable $callback, array $q = [])
+{
     $ch = curl_init();
-    curl_setopt_array($ch, array(
+    curl_setopt_array($ch, [
         CURLOPT_URL => "http://localhost:8080$path?" . http_build_query($q, '', '&'),
         CURLOPT_WRITEFUNCTION => function ($ch, $buf) use ($callback) {
             $callback($buf);
             return strlen($buf);
         },
-    ));
+    ]);
     return $ch;
 }
 
-// Print elapsed time
-function print_time() {
+/**
+ * Print elapsed time
+ */
+function print_time()
+{
     static $start;
     if (!$start) {
         $start = microtime(true);
@@ -40,8 +56,13 @@ function print_time() {
     }
 }
 
-// Unwrap Exception message
-function unwrap($value) {
+/**
+ * Unwrap exception message
+ * @param  mixed $value
+ * @return mixed
+ */
+function unwrap($value)
+{
     if (is_array($value)) {
         return array_map(__FUNCTION__, $value);
     }
