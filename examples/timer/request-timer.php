@@ -9,8 +9,9 @@ class TerminatedException extends \RuntimeException {}
 
 Co::wait(function () {
     try {
-        yield [timer(), main()];
-    } catch (TerminatedException $e) {
+        yield [timer($e), main()];
+    } catch (TerminatedException $_) {
+        $e = $_; // Since PHP Bug #72629, we need to assign caught exception to another variable.
         var_dump('Terminated.');
     }
 });
@@ -22,11 +23,14 @@ function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
     return $ch;
 }
 
-function timer()
+function timer(&$e)
 {
     $ms = 0;
     while (true) {
         yield CO::DELAY => 0.2;
+        if ($e) {
+            return;
+        }
         $ms += 200;
         echo "[Timer]: $ms miliseconds passed\n";
     }
