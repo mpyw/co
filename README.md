@@ -9,12 +9,14 @@ Asynchronous cURL executor simply based on resource and Generator
 | ~5.4 | :boom: | Incompatible |
 
 ```php
-function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true]) {
+function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
+{
     $ch = curl_init($url);
     curl_setopt_array($ch, $options);
     return $ch;
 }
-function get_xpath_async($url) {
+function get_xpath_async($url)
+{
     $dom = new \DOMDocument;
     @$dom->loadHTML(yield curl_init_with($url));
     return new \DOMXPath($dom);
