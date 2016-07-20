@@ -101,19 +101,10 @@ class CURLPool
         if ($time === false || $time < 0) {
             throw new \InvalidArgumentException('Delay must be positive number.');
         }
-        $now = microtime(true);
-        $until = $now + $time;
-        $diff = $until - $now;
-        if ($diff <= 0.0) {
-            // @codeCoverageIgnoreStart
-            $deferred->resolve(null);
-            return;
-            // @codeCoverageIgnoreEnd
-        }
         do {
             $id = uniqid();
         } while (isset($this->untils[$id]));
-        $this->untils[$id] = $until;
+        $this->untils[$id] = microtime(true) + $time;
         $this->deferreds[$id] = $deferred;
     }
 
@@ -122,23 +113,20 @@ class CURLPool
      */
     public function wait()
     {
-        $this->haltException = false;
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
-            if ($this->added || $this->queue) {
-                // if cURL handle is running, use curl_multi_select()
-                curl_multi_select($this->mh, $this->options['interval']) < 0
-                && usleep($this->options['interval'] * 1000000);
-            } else {
-                // otherwise, just sleep until nearest time
-                $this->sleepUntilNearestTime();
-            }
+            // if cURL handle is running, use curl_multi_select()
+            // otherwise, just sleep until nearest time
+            $this->added || $this->queue
+                ? curl_multi_select($this->mh, $this->options['interval']) < 0
+                  && usleep($this->options['interval'] * 1000000)
+                : $this->sleepUntilNearestTime();
             curl_multi_exec($this->mh, $active);
             $this->consumeCurlsAndUntils();
-            if ($this->haltException) {
-                throw $this->haltException;
-            }
-        } while ($this->added || $this->queue || $this->untils);
+        } while (!$this->haltException && ($this->added || $this->queue || $this->untils));
+        if ($this->haltException) {
+            throw $this->haltException;
+        }
     }
 
     /**
@@ -158,16 +146,15 @@ class CURLPool
         $min = null;
         foreach ($this->untils as $id => $until) {
             $diff = $now - $until;
-            if ($diff < 0) {
+            if ($diff < 0 || $min !== null && $diff >= $min) {
                 continue;
             }
-            if ($min === null || $diff < $min) {
-                $min = $diff;
-            }
+            $min = $diff;
         }
         if ($min !== null) {
-            usleep($min * 1000000);
+            return;
         }
+        usleep($min * 1000000);
     }
 
     /**
@@ -185,30 +172,32 @@ class CURLPool
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
-            if ($this->queue) {
-                $ch = array_shift($this->queue);
-                $this->addOrEnqueue($ch);
+            if (!$this->queue) {
+                continue;
             }
+            $this->addOrEnqueue(array_shift($this->queue));
         }
         // Now we check specified delay time elapsed
         foreach ($this->untils as $id => $until) {
             $diff = $until - microtime(true);
-            if ($diff <= 0.0 && isset($this->deferreds[$id])) {
-                $deferred = $this->deferreds[$id];
-                unset($this->deferreds[$id], $this->untils[$id]);
-                $deferred->resolve(null);
+            if ($diff > 0.0 || !isset($this->deferreds[$id])) {
+                continue;
             }
+            $deferred = $this->deferreds[$id];
+            unset($this->deferreds[$id], $this->untils[$id]);
+            $deferred->resolve(null);
         }
         // Finally, resolve cURL responses
         foreach ($entries as $entry) {
+            if (!isset($this->deferreds[(string)$entry['handle']])) {
+                continue;
+            }
             $r = $entry['result'] === CURLE_OK
                 ? curl_multi_getcontent($entry['handle'])
                 : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
-            if (isset($this->deferreds[(string)$entry['handle']])) {
-                $deferred = $this->deferreds[(string)$entry['handle']];
-                unset($this->deferreds[(string)$entry['handle']]);
-                $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
-            }
+            $deferred = $this->deferreds[(string)$entry['handle']];
+            unset($this->deferreds[(string)$entry['handle']]);
+            $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
         }
     }
 }
