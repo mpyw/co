@@ -57,7 +57,7 @@ var_dump(Co::wait([
 ```
 
 The requests are executed as parallelly as possible :smile:  
-Note that there are only **1 process** and **1 thread**.
+Note that there is only **1 process** and **1 thread**.
 
 ```Text
 [Delay] I start to have a pseudo-sleep in this coroutine for about 5 secs
@@ -189,7 +189,7 @@ The rules will be applied recursively.
 
 ### Exception-safe or Exception-unsafe priority
 
-The following `yield` statements can specify Exception-safe or Exception-unsafe.
+The following `yield` statements can specify Exception-safe or Exception-unsafe:
 
 ```php
 yield Co::SAFE => $value
@@ -205,7 +205,7 @@ Option priority:
 
 ### Pseudo-sleep for each coroutine
 
-The following `yield` statements delay the coroutine processing.
+The following `yield` statements delay the coroutine processing:
 
 ```php
 yield Co::DELAY => $seconds
@@ -253,11 +253,11 @@ echo (yield $bar);
 
 ### Optimizing concurrency by grouping same destination
 
-Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actual uses only **1 TCP connection** for **same destination**.  
-You don't have to increase `concurrency` if the number of destination host is low.  
+Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actually uses only **1 TCP connection** for **the same destination**.  
+You don't have to increase `concurrency` if the number of destination hosts is low.  
 
 However, Co cannot read `CURLOPT_URL`. This is the limitation from PHP implemention.  
-To express that some cURL handles' destination are same, set unique identifier using **`CURLOPT_PRIVATE`**.
+To express that some cURL handles' destination are the same, set unique identifier using **`CURLOPT_PRIVATE`** each.
 
 ```php
 $urls = [
@@ -293,7 +293,7 @@ $responses = Co::wait($requests, [
 
 ### How can I yield/return without resolving?
 
-Currently there are no options for supressing resolving.  
+Currently there are no options for suppressing resolution.  
 In order to achieve it, you can simply wrap raw values in objects.
 
 ```php
