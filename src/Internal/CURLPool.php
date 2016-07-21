@@ -33,6 +33,20 @@ class CURLPool
     private $added = [];
 
     /**
+     * The number of whole running TCP connections.
+     * @var array
+     */
+    private $connectionCount = 0;
+
+    /**
+     * Counts per destination.
+     *   key   => identifier
+     *   value => count
+     * @var array
+     */
+    private $destinations = [];
+
+    /**
      * Delays to be ended at.
      * @var array
      */
@@ -73,7 +87,10 @@ class CURLPool
         if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
             throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
         }
-        $this->options['concurrency'] > 0 && count($this->added) >= $this->options['concurrency']
+        $id = (string)curl_getinfo($ch, CURLINFO_PRIVATE);
+        $this->options['concurrency'] > 0
+        && $this->connectionCount >= $this->options['concurrency']
+        && ($id === '' || empty($this->destinations[$id]))
             ? $this->enqueueCurl($ch, $deferred)
             : $this->addCurl($ch, $deferred);
     }
@@ -94,7 +111,46 @@ class CURLPool
             // @codeCoverageIgnoreEnd
         }
         $this->added[(string)$ch] = $ch;
+        $this->addDestination($ch);
         $deferred && $this->deferreds[(string)$ch] = $deferred;
+    }
+
+    /**
+     * Add destination info.
+     * @param resource $ch
+     */
+    private function addDestination($ch)
+    {
+        $id = (string)curl_getinfo($ch, CURLINFO_PRIVATE);
+        if ($id === '') {
+            ++$this->connectionCount;
+            return;
+        }
+        if (empty($this->destinations[$id])) {
+            $this->destinations[$id] = 1;
+            ++$this->connectionCount;
+            return;
+        }
+        ++$this->destinations[$id];
+    }
+
+    /**
+     * Remove destination info.
+     * @param resource $ch
+     */
+    private function removeDestination($ch)
+    {
+        $id = (string)curl_getinfo($ch, CURLINFO_PRIVATE);
+        if ($id === '') {
+            --$this->connectionCount;
+            return;
+        }
+        if (empty($this->destinations[$id]) || $this->destinations[$id] === 1) {
+            unset($this->destinations[$id]);
+            --$this->connectionCount;
+            return;
+        }
+        --$this->destinations[$id];
     }
 
     /**
@@ -201,6 +257,7 @@ class CURLPool
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
+            $this->removeDestination($entry['handle']);
             $this->queue && $this->addOrEnqueue(array_shift($this->queue));
         }
         return $entries;

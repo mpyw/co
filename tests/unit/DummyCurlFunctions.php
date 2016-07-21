@@ -8,6 +8,16 @@ function curl_errno(\DummyCurl $ch) {
 function curl_error(\DummyCurl $ch) {
     return $ch->errstr();
 }
+function curl_setopt(\DummyCurl $ch, $key, $value) {
+    if ($key === CURLOPT_PRIVATE) {
+        $ch->setPrivate($value);
+    }
+}
+function curl_getinfo(\DummyCurl $ch, $key) {
+    if ($key === CURLINFO_PRIVATE) {
+        return $ch->getPrivate();
+    }
+}
 function curl_multi_init() {
     return new \DummyCurlMulti;
 }

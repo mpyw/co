@@ -208,10 +208,56 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
             $pool->addOrEnqueue($ch, $dfd);
         }
         $pool->wait();
-        foreach ($curls as $i => $curl) {
+        foreach ($curls as $curl) {
             $str = str_replace('DummyCurl', 'Response', (string)$curl);
             $this->assertContains($str, $done);
             $this->assertEquals([0, 2], [$curl->startedAt(), $curl->stoppedAt()]);
+        }
+    }
+
+    public function testGroupByDestinations()
+    {
+        $groups = [
+            'A' => array_map(function ($i) {
+                $ch = new DummyCurl("A$i", 5);
+                $ch->setPrivate('A');
+                return $ch;
+            }, range(1, 100)),
+            'B' => array_map(function ($i) {
+                $ch = new DummyCurl("B$i", 10);
+                $ch->setPrivate('B');
+                return $ch;
+            }, range(1, 100)),
+            'C' => array_map(function ($i) {
+                $ch = new DummyCurl("C$i", 15);
+                $ch->setPrivate('C');
+                return $ch;
+            }, range(1, 100)),
+        ];
+        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $done = [];
+        foreach ($groups as $destination => $group) {
+            foreach ($group as $key => $ch) {
+                $dfd = new Deferred();
+                $dfd->promise()->then(
+                    function ($result) use (&$done) {
+                        $done[] = $result;
+                    },
+                    function () {
+                        $this->assertTrue(false);
+                    }
+                );
+                $pool->addOrEnqueue($ch, $dfd);
+            }
+        }
+        $pool->wait();
+        $costs = ['A' => 5, 'B' => 10, 'C' => 15];
+        foreach ($groups as $destination => $group) {
+            foreach ($group as $curl) {
+                $str = str_replace('DummyCurl', 'Response', (string)$curl);
+                $this->assertContains($str, $done);
+                $this->assertEquals([0, $costs[$destination]], [$curl->startedAt(), $curl->stoppedAt()]);
+            }
         }
     }
 }

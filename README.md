@@ -127,8 +127,8 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 | `throw` | **`true`** | Whether to throw or capture `CURLException` on cURL errors.<br />Whether to propagate or capture `RuntimeException` thrown in Generator.|
 | `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ are required. |
 | `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
-| `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. <br />Zero means real-time observation.|
-| `concurrency` | **`6`** | cURL execution pool size.<br />Zero means unlimited.<br /><br />Larger value or zero will be recommended if you use pipelining or multiplexing.<br />Otherwise, the value should be between 1 to 10.|
+| `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
+| `concurrency` | **`6`** | cURL execution pool size. `0` means unlimited.<br />The value should be within `10` at most.|
 
 #### Return Value
 
@@ -249,6 +249,44 @@ PHP5.5~5.6:
 ```php
 $a = (yield $foo);
 echo (yield $bar);
+```
+
+### Optimizing concurrency by grouping same destination
+
+Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actual uses only **1 TCP connection** per **same destination**.  
+You don't have to increase `concurrency` if the number of destination host is low.  
+
+However, Co cannot read `CURLOPT_URL`. This is the limitation from PHP implemention.  
+To express that some cURL handles' destination are same, set unique identifier using **`CURLOPT_PRIVATE`**.
+
+```php
+$urls = [
+    'mpyw/co' => 'https://github.com/mpyw/co',
+    'mpyw/TwistOAuth' => 'https://github.com/mpyw/TwistOAuth',
+    '@mpyw' => 'https://twitter.com/mpyw',
+    '@twitter' => 'https://twitter.com/twitter',
+    '@TwitterJP' => 'https://twitter.com/TwitterJP',
+];
+
+$requests = [];
+$hosts = [];
+foreach ($urls as $title => $url) {
+    $ch = curl_init();
+    $host = parse_url($url, PHP_URL_HOST);
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_PRIVATE => $host,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => 'gzip',
+    ]);
+    $requests[$destination][$title] = $ch;
+    $hosts[$host] = true;
+}
+
+$responses = Co::wait($requests, [
+    'pipeline' => true,
+    'concurrency' => count($hosts),
+]);
 ```
 
 ## FAQ

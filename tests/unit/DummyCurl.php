@@ -9,6 +9,7 @@ class DummyCurl
     private $reservedErrno;
     private $reservedErrstr;
     private $reservedResponse;
+    private $private;
 
     private $counter = 0;
     private $read = false;
@@ -122,5 +123,15 @@ class DummyCurl
     public function stoppedAt()
     {
         return $this->stoppedAt;
+    }
+
+    public function setPrivate($value)
+    {
+        $this->private = $value;
+    }
+
+    public function getPrivate()
+    {
+        return $this->private;
     }
 }

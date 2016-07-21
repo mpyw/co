@@ -1,6 +1,11 @@
 mpyw/co - changelog
 ===================
 
+1.1.5 (2016-07-21)
+------------------
+
++ Supported destination specification by CURLOPT_PRIVATE
+
 1.1.4 (2016-07-21)
 ------------------
 
