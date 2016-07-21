@@ -279,7 +279,7 @@ foreach ($urls as $title => $url) {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => 'gzip',
     ]);
-    $requests[$destination][$title] = $ch;
+    $requests[$title] = $ch;
     $hosts[$host] = true;
 }
 
