@@ -147,17 +147,16 @@ class CURLPool
         foreach ($this->untils as $id => $until) {
             $diff = $until - $now;
             if ($diff < 0) {
+                // @codeCoverageIgnoreStart
                 return;
+                // @codeCoverageIgnoreEnd
             }
             if ($min !== null && $diff >= $min) {
                 continue;
             }
             $min = $diff;
         }
-        if ($min !== null) {
-            return;
-        }
-        usleep($min * 1000000);
+        $min && usleep($min * 1000000);
     }
 
     /**
