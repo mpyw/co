@@ -73,11 +73,18 @@ class CURLPool
         if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
             throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
         }
-        if ($this->options['concurrency'] > 0 && count($this->added) >= $this->options['concurrency']) {
-            $this->queue[(string)$ch] = $ch;
-            $deferred && $this->deferreds[(string)$ch] = $deferred;
-            return;
-        }
+        $this->options['concurrency'] > 0 && count($this->added) >= $this->options['concurrency']
+            ? $this->enqueueCurl($ch, $deferred)
+            : $this->addCurl($ch, $deferred);
+    }
+
+    /**
+     * Call curl_multi_add_handle().
+     * @param resource $ch
+     * @param Deferred $deferred
+     */
+    private function addCurl($ch, Deferred $deferred = null)
+    {
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
             // @codeCoverageIgnoreStart
@@ -87,6 +94,17 @@ class CURLPool
             // @codeCoverageIgnoreEnd
         }
         $this->added[(string)$ch] = $ch;
+        $deferred && $this->deferreds[(string)$ch] = $deferred;
+    }
+
+    /**
+     * Push into queue.
+     * @param resource $ch
+     * @param Deferred $deferred
+     */
+    private function enqueueCurl($ch, Deferred $deferred = null)
+    {
+        $this->queue[(string)$ch] = $ch;
         $deferred && $this->deferreds[(string)$ch] = $deferred;
     }
 
@@ -164,22 +182,35 @@ class CURLPool
      */
     private function consumeCurlsAndUntils()
     {
+        $entries = $this->consumeCurls();
+        $this->consumeUntils();
+        $this->resolveCurls($entries);
+    }
+
+    /**
+     * Poll completed cURL entries and consume cURL queue.
+     * @return array
+     */
+    private function consumeCurls()
+    {
         $entries = [];
-        // First, we have to poll completed entries
         // DO NOT call curl_multi_add_handle() until polling done
         while ($entry = curl_multi_info_read($this->mh)) {
             $entries[] = $entry;
         }
-        // Remove entry from multi handle to consume queue if available
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
-            if (!$this->queue) {
-                continue;
-            }
-            $this->addOrEnqueue(array_shift($this->queue));
+            $this->queue && $this->addOrEnqueue(array_shift($this->queue));
         }
-        // Now we check specified delay time elapsed
+        return $entries;
+    }
+
+    /**
+     * Consume delay queue.
+     */
+    private function consumeUntils()
+    {
         foreach ($this->untils as $id => $until) {
             $diff = $until - microtime(true);
             if ($diff > 0.0 || !isset($this->deferreds[$id])) {
@@ -189,17 +220,23 @@ class CURLPool
             unset($this->deferreds[$id], $this->untils[$id]);
             $deferred->resolve(null);
         }
-        // Finally, resolve cURL responses
+    }
+
+    /**
+     * Resolve polled cURLs.
+     * @param  array $entries Polled cURL entries.
+     */
+    private function resolveCurls($entries)
+    {
         foreach ($entries as $entry) {
             if (!isset($this->deferreds[(string)$entry['handle']])) {
                 continue;
             }
-            $r = $entry['result'] === CURLE_OK
-                ? curl_multi_getcontent($entry['handle'])
-                : new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']);
             $deferred = $this->deferreds[(string)$entry['handle']];
             unset($this->deferreds[(string)$entry['handle']]);
-            $r instanceof CURLException ? $deferred->reject($r) : $deferred->resolve($r);
+            $entry['result'] === CURLE_OK
+                ? $deferred->resolve(curl_multi_getcontent($entry['handle']))
+                : $deferred->reject(new CURLException(curl_error($entry['handle']), $entry['result'], $entry['handle']));
         }
     }
 }
