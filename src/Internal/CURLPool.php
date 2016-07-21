@@ -73,7 +73,7 @@ class CURLPool
         if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
             throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
         }
-        if (count($this->added) >= $this->options['concurrency']) {
+        if ($this->options['concurrency'] > 0 && count($this->added) >= $this->options['concurrency']) {
             $this->queue[(string)$ch] = $ch;
             $deferred && $this->deferreds[(string)$ch] = $deferred;
             return;

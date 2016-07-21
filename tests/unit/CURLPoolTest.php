@@ -184,4 +184,34 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
         $pool->wait();
         $this->assertTrue(true);
     }
+
+
+    public function testUnlimitedConcurrency()
+    {
+        $pool = new CURLPool(new CoOption(['concurrency' => 0]));
+        $a = new Deferred;
+        $curls = [];
+        foreach (range(1, 100) as $i) {
+            $curls[] = new DummyCurl($i, 2);
+        }
+        $done = [];
+        foreach ($curls as $ch) {
+            $dfd = new Deferred();
+            $dfd->promise()->then(
+                function ($result) use (&$done) {
+                    $done[] = $result;
+                },
+                function () {
+                    $this->assertTrue(false);
+                }
+            );
+            $pool->addOrEnqueue($ch, $dfd);
+        }
+        $pool->wait();
+        foreach ($curls as $i => $curl) {
+            $str = str_replace('DummyCurl', 'Response', (string)$curl);
+            $this->assertContains($str, $done);
+            $this->assertEquals([0, 2], [$curl->startedAt(), $curl->stoppedAt()]);
+        }
+    }
 }
