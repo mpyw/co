@@ -253,7 +253,7 @@ echo (yield $bar);
 
 ### Optimizing concurrency by grouping same destination
 
-Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actual uses only **1 TCP connection** per **same destination**.  
+Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actual uses only **1 TCP connection** for **same destination**.  
 You don't have to increase `concurrency` if the number of destination host is low.  
 
 However, Co cannot read `CURLOPT_URL`. This is the limitation from PHP implemention.  
