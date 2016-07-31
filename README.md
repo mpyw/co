@@ -288,21 +288,3 @@ $responses = Co::wait($requests, [
     'concurrency' => count($hosts),
 ]);
 ```
-
-## FAQ
-
-### How can I yield/return without resolving?
-
-Currently there are no options for suppressing resolution.  
-In order to achieve it, you can simply wrap raw values in objects.
-
-```php
-Co::wait(function () {
-    $obj = yield (object)['curl' => curl_init()];
-    $curl = $obj['curl'];
-    assert(is_resource($curl)); // It is still cURL handle.
-});
-```
-
-Do you **REALLY** need new features such as `Co::RETURN_RAW`?  
-[Create new issue!](https://github.com/mpyw/co/issues)
