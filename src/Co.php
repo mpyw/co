@@ -215,6 +215,7 @@ class Co implements CoInterface
                     $current = &$current[$key];
                 }
                 $current = $resolved;
+                unset($current);
             }
             $next($yielded);
         };
