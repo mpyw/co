@@ -34,7 +34,7 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 7]), function () {
                 print_time();
             }
             return ['x' => ['y' => function () {
-                return curl('/rest', ['id' => 6, 'sleep' => 2]);
+                return yield curl('/rest', ['id' => 6, 'sleep' => 2]);
             }]];
         }
     ]);

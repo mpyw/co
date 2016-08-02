@@ -183,9 +183,10 @@ The rules will be applied recursively.
 | Before | After |
 |:---:|:----:|
 |cURL resource|`curl_multi_getconent()` result or `CURLException`|
-|`Traversable`<br />(Excluding Generator) | Array or `RuntimeException`|
-|Function | Return value or `RuntimeException`|
-|Generator | Return value (After all yields done) or `RuntimeException`|
+|Array|Array (with resolved children)|
+|Generator Closure<br>Generator| Return value (after all yields done) or `RuntimeException`|
+
+"Generator Closure" means Closure that contains `yield` keywords.
 
 ### Exception-safe or Exception-unsafe priority
 

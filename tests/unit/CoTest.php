@@ -66,11 +66,11 @@ class CoTest extends \Codeception\TestCase\Test {
                 yield Co::RETURN_WITH => yield function () {
                     return yield function () {
                         return 3;
-                        yield null;
+                        yield;
                     };
-                    yield null;
+                    yield;
                 };
-                yield null;
+                yield;
             };
             $y = yield 2;
             return $x + $y;
@@ -78,10 +78,11 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->assertEquals(5, Co::wait($genfunc));
 
         $genfunc = function () {
+            yield;
             return array_sum(array_map('current', yield [
-                [function () { return 7; yield null; }],
-                [function () { return 9; }],
-                [function () { yield null; return 13; }],
+                [function () { return 7; yield; }],
+                [function () { return 9; yield; }],
+                [function () { yield; return 13; }],
             ]));
         };
         $this->assertEquals(29, Co::wait($genfunc));
@@ -91,10 +92,13 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         $i = 0;
         $genfunc = function () use (&$i) {
+            yield;
             Co::async(function () use (&$i) {
+                yield;
                 ++$i;
             });
             Co::async(function () use (&$i) {
+                yield;
                 ++$i;
             });
         };
@@ -132,6 +136,7 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         $e = Co::wait(function () {
             $e = yield function () {
+                yield;
                 throw new \RuntimeException;
             };
             $this->assertInstanceOf(\RuntimeException::class, $e);
@@ -141,23 +146,10 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->setExpectedException(\RuntimeException::class);
         Co::wait(function () {
             yield function () {
+                yield;
                 throw new \RuntimeException;
             };
         });
-    }
-
-    public function testRuntimeExceptionHandlingOnResolvingReturnedFunction()
-    {
-        $result = Co::wait(function () {
-            return 3 + yield Co::UNSAFE => function () {
-                yield;
-                return function () {
-                    throw new \RuntimeException(2);
-                };
-            };
-        }, ['throw' => false]);
-        $this->assertInstanceOf(\RuntimeException::class, $result);
-        $this->assertEquals($result->getMessage(), 2);
     }
 
     public function testLogicExceptionHandling()
@@ -165,6 +157,7 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->setExpectedException(\LogicException::class);
         Co::wait(function () {
             yield function () {
+                yield;
                 throw new \LogicException;
             };
         }, ['throw' => false]);
@@ -196,6 +189,7 @@ class CoTest extends \Codeception\TestCase\Test {
                         $this->assertEquals('Error[invalid-02]', $e->getMessage());
                     }
                     return ['x' => ['y' => function () {
+                        yield;
                         return new DummyCurl('6', 2);
                     }]];
                 }
@@ -216,6 +210,7 @@ class CoTest extends \Codeception\TestCase\Test {
             $y = yield Co::SAFE => [
                 new DummyCurl('2', 3),
                 function () {
+                    yield;
                     throw new \RuntimeException('01');
                 },
             ];
@@ -227,22 +222,26 @@ class CoTest extends \Codeception\TestCase\Test {
                 function () {
                     $this->assertEquals('Response[3]', yield new DummyCurl('3', 1));
                     $y = yield function () {
+                        yield;
                         throw new \RuntimeException('02');
                     };
                     $this->assertInstanceOf(\RuntimeException::class, $y);
                     $this->assertEquals('02', $y->getMessage());
                     yield Co::UNSAFE => function () {
+                        yield;
                         throw new \RuntimeException('03');
                     };
                     $this->assertTrue(false);
                 },
                 function () {
                     $y = yield function () {
+                        yield;
                         throw new \RuntimeException('04');
                     };
                     $this->assertInstanceOf(\RuntimeException::class, $y);
                     $this->assertEquals('04', $y->getMessage());
                     yield Co::UNSAFE => function () {
+                        yield;
                         throw new \RuntimeException('05');
                     };
                     $this->assertTrue(false);
@@ -269,6 +268,7 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         $async_results = [];
         $sync_results = Co::wait([new DummyCurl('5', 1), function () use (&$async_results) {
+            yield;
             Co::async(function () use (&$async_results) {
                 $async_results[] = yield new DummyCurl('2', 6);
                 Co::async(function () use (&$async_results) {
@@ -318,6 +318,7 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         $this->setExpectedException(\BadMethodCallException::class);
         Co::wait(function () {
+            yield;
             Co::wait(1);
         });
     }
@@ -338,6 +339,7 @@ class CoTest extends \Codeception\TestCase\Test {
                 }
             },
             function () {
+                yield;
                 throw new \RuntimeException;
             }
         ]);

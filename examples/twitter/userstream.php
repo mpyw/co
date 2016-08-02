@@ -48,7 +48,7 @@ Co::wait(array_map(function ($i) {
         exit(1);
     }
     eval(implode($r));
-    return $to->curlStreaming('user', function ($status) use ($to, $i) {
+    yield $to->curlStreaming('user', function ($status) use ($to, $i) {
         if (!isset($status->text)) {
             return;
         }

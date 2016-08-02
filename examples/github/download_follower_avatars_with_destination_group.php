@@ -71,12 +71,12 @@ Co::wait(function () {
     $page = 0;
     do {
         $sources = yield get_github_followers_async(USERNAME, ++$page, $has_more);
-        Co::async(function () use ($sources) {
+        yield Co::async(function () use ($sources) {
             $requests = [];
             foreach ($sources as $username => $src) {
                 $requests[] = download_image_async($src, $username);
             }
-            return $requests;
+            yield $requests;
         });
     } while ($has_more);
 }, ['pipeline' => true]);

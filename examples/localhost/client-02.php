@@ -12,6 +12,7 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
     print_r(unwrap(yield Co::SAFE => [
         curl('/rest', ['id' => 2, 'sleep' => 3]),
         function () {
+            yield;
             throw new \RuntimeException('01');
         }
     ]));
@@ -23,18 +24,22 @@ $result = Co::wait([curl('/rest', ['id' => 1, 'sleep' => 5]), function () {
             echo yield curl('/rest', ['id' => 3, 'sleep' => 1]), "\n";
             print_time();
             echo unwrap(yield function () {
+                yield;
                 throw new \RuntimeException('02');
             }) . "\n";
             yield Co::UNSAFE => function () {
+                yield;
                 throw new \RuntimeException('03');
             };
             return 'Unreachable';
         },
         function () {
             echo unwrap(yield Co::SAFE => function () {
+                yield;
                 throw new \RuntimeException('04');
             }) . "\n";
             yield Co::UNSAFE => function () {
+                yield;
                 throw new \RuntimeException('05');
             };
             return 'Unreachable';

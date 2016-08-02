@@ -9,11 +9,9 @@ class Utils {
 
     /**
      * Recursively normalize value.
-     *   Closure     -> Returned value
-     *   Generator   -> GeneratorContainer
-     *   Array       -> Array (children's are normalized)
-     *   Traversable -> Array (children's are normalized)
-     *   Others      -> Others
+     *   Generator Closure  -> GeneratorContainer
+     *   Array              -> Array (children's are normalized)
+     *   Others             -> Others
      * @param  mixed    $value
      * @param  CoOption $options
      * @param  mixed    $yield_key
@@ -21,20 +19,13 @@ class Utils {
      */
     public static function normalize($value, CoOption $options, $yield_key = null)
     {
-        while ($value instanceof \Closure) {
-            try {
-                $value = $value();
-            } catch (\RuntimeException $value) {
-                if ($yield_key === CoInterface::UNSAFE ||
-                    $yield_key !== CoInterface::SAFE && $options['throw']) {
-                    throw $value;
-                }
-            }
+        if (self::isGeneratorClosure($value)) {
+            $value = $value();
         }
         if ($value instanceof \Generator) {
             return new GeneratorContainer($value, $options, $yield_key);
         }
-        if (self::isArrayLike($value)) {
+        if (is_array($value)) {
             $tmp = [];
             foreach ($value as $k => $v) {
                 $tmp[$k] = self::normalize($v, $options, $yield_key);
@@ -93,16 +84,14 @@ class Utils {
     }
 
     /**
-     * Check if value is a valid array or Traversable, not a Generator.
+     * Check if value is a valid Generator closure.
      * @param  mixed $value
      * @return bool
      */
-    public static function isArrayLike($value)
+    public static function isGeneratorClosure($value)
     {
-        return
-            $value instanceof \Traversable
-            && !$value instanceof \Generator
-            || is_array($value);
+        return $value instanceof \Closure
+            && (new \ReflectionFunction($value))->isGenerator();
     }
 
 }

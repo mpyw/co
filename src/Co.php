@@ -136,51 +136,35 @@ class Co implements CoInterface
                 return;
             }
             // Now we normalize returned value
-            try {
-                $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
-                $yieldables = Utils::getYieldables($returned);
-                // If normalized value contains yieldables, we have to chain resolver
-                if ($yieldables) {
-                    $this->promiseAll($yieldables, true)->then(
-                        self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
-                        [$deferred, 'reject']
-                    );
-                    return;
-                }
-                // Propagate normalized returned value
-                $deferred->resolve($returned);
-            } catch (\RuntimeException $e) {
-                // Propagate exception thrown in normalization
-                $deferred->reject($e);
+            $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
+            $yieldables = Utils::getYieldables($returned);
+            // If normalized value contains yieldables, we have to chain resolver
+            if ($yieldables) {
+                $this->promiseAll($yieldables, true)->then(
+                    self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
+                    [$deferred, 'reject']
+                );
+                return;
             }
+            // Propagate normalized returned value
+            $deferred->resolve($returned);
+            return;
+        }
+
+        // Check delay request yields
+        if ($gc->key() === CoInterface::DELAY) {
+            $dfd = new Deferred;
+            $this->pool->addDelay($gc->current(), $dfd);
+            $dfd->promise()->then(function () use ($gc) {
+                $gc->send(null);
+            })->always(function () use ($gc, $deferred) {
+                $this->processGeneratorContainer($gc, $deferred);
+            });
             return;
         }
 
         // Now we normalize yielded value
-        try {
-            // Check delay request yields
-            if ($gc->key() === CoInterface::DELAY) {
-                $dfd = new Deferred;
-                $this->pool->addDelay($gc->current(), $dfd);
-                $dfd->promise()->then(function () use ($gc) {
-                    $gc->send(null);
-                })->always(function () use ($gc, $deferred) {
-                    $this->processGeneratorContainer($gc, $deferred);
-                });
-                return;
-            }
-            $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
-        } catch (\RuntimeException $e) {
-            // If exception thrown in normalization...
-            //   - If generator accepts exception, we throw it into generator
-            //   - If generator does not accept exception, we assume it as non-exception value
-            $gc->throwAcceptable() ? $gc->throw_($e) : $gc->send($e);
-            // Continue
-            $this->processGeneratorContainer($gc, $deferred);
-            return;
-        }
-
-        // Search yieldables from yielded value
+        $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
         $yieldables = Utils::getYieldables($yielded);
         if (!$yieldables) {
             // If there are no yieldables, send yielded value back into generator

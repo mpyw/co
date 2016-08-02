@@ -1,6 +1,15 @@
 mpyw/co - changelog
 ===================
 
+1.2.0 (2016-08-02)
+------------------
+
+INCOMPATIBLE CHANGES!!
+
+- Resolving Traversable
+- Resolving Closure
++ Resolving Generator Closure (Closure that contains `yield` keywords)
+
 1.1.5 (2016-07-21)
 ------------------
 
