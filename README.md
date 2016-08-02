@@ -125,7 +125,7 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 | Key | Default | Description |
 |:---:|:---:|:---|
 | `throw` | **`true`** | Whether to throw or capture `CURLException` on cURL errors.<br />Whether to propagate or capture `RuntimeException` thrown in Generator.|
-| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ are required. |
+| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ is required. |
 | `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
 | `concurrency` | **`6`** | cURL execution pool size. `0` means unlimited.<br />The value should be within `10` at most.|
