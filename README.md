@@ -183,7 +183,7 @@ The rules will be applied recursively.
 | Before | After |
 |:---:|:----:|
 |cURL resource|`curl_multi_getconent()` result or `CURLException`|
-|Array|Array (with resolved children)|
+|Array|Array (with resolved children) or `RuntimeException`|
 |Generator Closure<br>Generator| Return value (after all yields done) or `RuntimeException`|
 
 "Generator Closure" means Closure that contains `yield` keywords.
