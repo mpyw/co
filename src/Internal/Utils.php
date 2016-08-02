@@ -2,7 +2,6 @@
 
 namespace mpyw\Co\Internal;
 
-use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\GeneratorContainer;
 
 class Utils {
