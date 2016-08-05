@@ -88,7 +88,7 @@ class CoOption implements \ArrayAccess
     public function offsetGet($offset)
     {
         if (!isset($this->options[$offset])) {
-            throw new \DomainException('Undefined field: ' + $offset);
+            throw new \OutOfRangeException('Undefined field: ' + $offset);
         }
         return $this->options[$offset];
     }
@@ -123,7 +123,7 @@ class CoOption implements \ArrayAccess
     {
         foreach ($options as $key => $value) {
             if (!isset(self::$types[$key])) {
-                throw new \InvalidArgumentException("Unknown option: $key");
+                throw new \OutOfRangeException("Unknown option: $key");
             }
             $validator = [__CLASS__, 'validate' . self::$types[$key]];
             $options[$key] = $validator($key, $value);
@@ -159,8 +159,11 @@ class CoOption implements \ArrayAccess
     private static function validateNaturalFloat($key, $value)
     {
         $value = filter_var($value, FILTER_VALIDATE_FLOAT);
-        if ($value === false || $value < 0.0) {
-            throw new \InvalidArgumentException("Option[$key] must be positive float or zero.");
+        if ($value === false) {
+            throw new \InvalidArgumentException("Option[$key] must be float.");
+        }
+        if ($value < 0.0) {
+            throw new \DomainException("Option[$key] must be positive or zero.");
         }
         return $value;
     }
@@ -175,8 +178,11 @@ class CoOption implements \ArrayAccess
     private static function validateNaturalInt($key, $value)
     {
         $value = filter_var($value, FILTER_VALIDATE_INT);
-        if ($value === false || $value < 0) {
-            throw new \InvalidArgumentException("Option[$key] must be positive integer or zero.");
+        if ($value === false) {
+            throw new \InvalidArgumentException("Option[$key] must be integer.");
+        }
+        if ($value < 0) {
+            throw new \DomainException("Option[$key] must be positive or zero.");
         }
         return $value;
     }

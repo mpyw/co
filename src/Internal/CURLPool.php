@@ -85,7 +85,7 @@ class CURLPool
     public function addOrEnqueue($ch, Deferred $deferred = null)
     {
         if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
-            throw new \InvalidArgumentException("The cURL handle is already enqueued: $ch");
+            throw new \UnexpectedValueException("The cURL handle is already enqueued: $ch");
         }
         $id = (string)curl_getinfo($ch, CURLINFO_PRIVATE);
         $this->options['concurrency'] > 0
@@ -172,8 +172,11 @@ class CURLPool
     public function addDelay($time, Deferred $deferred)
     {
         $time = filter_var($time, FILTER_VALIDATE_FLOAT);
-        if ($time === false || $time < 0) {
-            throw new \InvalidArgumentException('Delay must be positive number.');
+        if ($time === false) {
+            throw new \InvalidArgumentException('Delay must be integer.');
+        }
+        if ($time < 0) {
+            throw new \DomainException('Delay must be positive.');
         }
         do {
             $id = uniqid();

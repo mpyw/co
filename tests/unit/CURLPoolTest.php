@@ -102,7 +102,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
             new DummyCurl('C', 4),
             new DummyCurl('C', 5),
         ];
-        $this->setExpectedException(\InvalidArgumentException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
+        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
         foreach ($curls as $ch) {
             $pool->addOrEnqueue($ch);
         }
@@ -118,7 +118,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
             new DummyCurl('C', 4),
             new DummyCurl('C', 5),
         ];
-        $this->setExpectedException(\InvalidArgumentException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
+        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
         foreach ($curls as $ch) {
             $pool->addOrEnqueue($ch);
         }
@@ -134,7 +134,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
             new DummyCurl('C', 4),
             new DummyCurl('C', 5),
         ];
-        $this->setExpectedException(\InvalidArgumentException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
+        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
         foreach ($curls as $ch) {
             $pool->addOrEnqueue($ch);
         }
@@ -169,11 +169,18 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
         $this->assertTrue($w < $y);
     }
 
-    public function testInvalidDelay()
+    public function testInvalidDelayType()
     {
         $pool = new CURLPool(new CoOption(['concurrency' => 3]));
         $this->setExpectedException(\InvalidArgumentException::class);
         $pool->addDelay([], new Deferred);
+    }
+
+    public function testInvalidDelayDomain()
+    {
+        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $this->setExpectedException(\DomainException::class);
+        $pool->addDelay(-1, new Deferred);
     }
 
     public function testCurlWithoutDeferred()

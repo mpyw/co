@@ -181,7 +181,7 @@ class GeneratorContainer
     private function validateValidity()
     {
         if (!$this->valid()) {
-            throw new \LogicException('Unreachable here.');
+            throw new \BadMethodCallException('Unreachable here.');
         }
     }
 
@@ -192,7 +192,7 @@ class GeneratorContainer
     private function validateInvalidity()
     {
         if ($this->valid()) {
-            throw new \LogicException('Unreachable here.');
+            throw new \BadMethodCallException('Unreachable here.');
         }
     }
 }

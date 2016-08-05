@@ -71,17 +71,25 @@ class CoOptionTest extends \Codeception\TestCase\Test {
         $this->assertEquals(self::$CoOption::validateNaturalInt('', 3.0), 3);
         $invalid_cases = [
             function () {
-                self::$CoOption::validateNaturalInt('', '3.0');
+                self::$CoOption::validateNaturalInt('', []);
             },
             function () {
-                self::$CoOption::validateNaturalInt('', -1);
+                self::$CoOption::validateNaturalInt('', '3.0');
             },
             function () {
                 self::$CoOption::validateNaturalInt('', INF);
             },
         ];
         foreach ($invalid_cases as $i => $case) {
-            $this->specify("invalid ($i)", $case, ['throws' => \InvalidArgumentException::class]);
+            $this->specify("invalid types ($i)", $case, ['throws' => \InvalidArgumentException::class]);
+        }
+        $invalid_cases = [
+            function () {
+                self::$CoOption::validateNaturalInt('', -1);
+            },
+        ];
+        foreach ($invalid_cases as $i => $case) {
+            $this->specify("invalid domains ($i)", $case, ['throws' => \DomainException::class]);
         }
     }
 
@@ -93,14 +101,22 @@ class CoOptionTest extends \Codeception\TestCase\Test {
         $this->assertEquals(self::$CoOption::validateNaturalFloat('', '3.0'), 3.0);
         $invalid_cases = [
             function () {
-                self::$CoOption::validateNaturalFloat('', -1.0);
+                self::$CoOption::validateNaturalFloat('', []);
             },
             function () {
                 self::$CoOption::validateNaturalFloat('', INF);
             },
         ];
         foreach ($invalid_cases as $i => $case) {
-            $this->specify("invalid ($i)", $case, ['throws' => \InvalidArgumentException::class]);
+            $this->specify("invalid types ($i)", $case, ['throws' => \InvalidArgumentException::class]);
+        }
+        $invalid_cases = [
+            function () {
+                self::$CoOption::validateNaturalFloat('', -1.0);
+            },
+        ];
+        foreach ($invalid_cases as $i => $case) {
+            $this->specify("invalid domains ($i)", $case, ['throws' => \DomainException::class]);
         }
     }
 
@@ -135,7 +151,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
 
         $this->specify('invalid construction', function () use ($options) {
             new CoOption(['invalid' => true]);
-        }, ['throws' => \InvalidArgumentException::class]);
+        }, ['throws' => \OutOfRangeException::class]);
 
         $this->specify('invalid assignment', function () use ($options) {
             $options['pipeline'] = false;
@@ -147,7 +163,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
 
         $this->specify('Undefined field', function () use ($options){
             $options['invalid'];
-        }, ['throws' => \DomainException::class]);
+        }, ['throws' => \OutOfRangeException::class]);
     }
 
 }
