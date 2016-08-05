@@ -1,6 +1,13 @@
 mpyw/co - changelog
 ===================
 
+1.3.0 (2016-08-05)
+------------------
+
++ Better exception handling for Co::async()
++ Improved exception type choices
++ Changed some error messages
+
 1.2.0 (2016-08-02)
 ------------------
 
