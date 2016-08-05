@@ -145,15 +145,20 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 
 Execute cURL requests along with `Co::wait()` call, **without waiting** resolved values.  
 The options are inherited from `Co::wait()`.  
-<ins>This method is mainly expected to be used in <code>CURLOPT_WRITEFUNCTION</code> callback.</ins>
+
+This method is mainly expected to be used ...
+
+- When you are not interested in responses.
+- In `CURLOPT_WRITEFUNCTION` or `CURLOPT_HEADERFUNCTION` callbacks.
 
 ```php
-static Co::async(mixed $value) : null
+static Co::async(mixed $value, mixed $throw = null) : null
 ```
 
 #### Arguments
 
 - **`(mixed)`** __*$value*__<br /> Any values to be parallelly resolved.
+- **`(mixed)`** __*$throw*__<br /> Overrides `throw` in `Co::wait()` options when you passed `true` or `false`.
 
 #### Return Value
 
@@ -161,7 +166,7 @@ static Co::async(mixed $value) : null
 
 #### Exception
 
-- Throws `CURLException` or `RuntimeException` on Exception-unsafe mode.
+- `CURLException` or `RuntimeException` can be thrown when Exception-unsafe mode.<br />Note that you **CANNOT** capture top-level exceptions unless you catch **outside of `Co::wait()` call**.
 
 ### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
@@ -201,8 +206,9 @@ Option priority:
 
 1. `yield` in current scope
 2. `yield` in parent scope
-3. `throw` in `Co::wait()` options
-4. `throw` in static default options
+3. `$throw` in `Co::async()` argument
+4. `throw` in `Co::wait()` options
+5. `throw` in static default options
 
 ### Pseudo-sleep for each coroutine
 

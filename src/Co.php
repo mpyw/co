@@ -76,17 +76,22 @@ class Co implements CoInterface
      * Value is recursively resolved, but we never wait it.
      * This function must be called along with Co::wait().
      * @param  mixed $value
-     * @param  array $options
+     * @param  mixed $throw
      */
-    public static function async($value, array $options = [])
+    public static function async($value, $throw = null)
     {
         if (!self::$self) {
-            throw new \BadMethodCallException(
-                'Co::async() must be called along with Co::wait(). ' .
-                'This method is mainly expected to be used in CURLOPT_WRITEFUNCTION callback.'
-            );
+            throw new \BadMethodCallException('Co::async() must be called along with Co::wait(). ');
         }
-        self::$self->start($value, false);
+        if ($throw !== null) {
+            $throw = filter_var($throw, FILTER_VALIDATE_BOOLEAN, [
+                'flags' => FILTER_NULL_ON_FAILURE,
+            ]);
+            if ($throw === null) {
+                throw new \InvalidArgumentException("\$throw must be null or boolean.");
+            }
+        }
+        self::$self->start($value, false, $throw);
     }
 
     /**
@@ -98,9 +103,10 @@ class Co implements CoInterface
      * Start resovling.
      * @param  mixed    $value
      * @param  bool     $wait
+     * @param  mixed    $throw  Used for Co::async() overrides.
      * @param  mixed    If $wait, return resolved value.
      */
-    private function start($value, $wait = true)
+    private function start($value, $wait = true, $throw = null)
     {
         $deferred = new Deferred;
         // For convenience, all values are wrapped into generator
@@ -111,7 +117,8 @@ class Co implements CoInterface
                 $this->pool->reserveHaltException($e);
             }
         };
-        $con = Utils::normalize($genfunc, $this->options);
+        $options = $throw === null ? $this->options : $this->options->reconfigure(['throw' => $throw]);
+        $con = Utils::normalize($genfunc, $options);
         // We have to provide deferred object only if $wait
         $this->processGeneratorContainer($con, $deferred);
         // We have to wait $return only if $wait

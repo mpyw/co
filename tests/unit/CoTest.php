@@ -106,6 +106,45 @@ class CoTest extends \Codeception\TestCase\Test {
         $this->assertEquals($i, 2);
     }
 
+    public function testAsyncOverridesThrowInvalid()
+    {
+        $this->setExpectedException(\InvalidArgumentException::class);
+        $r = Co::wait(function () {
+            yield;
+            Co::async(function () {
+                yield;
+                throw new \RuntimeException;
+            }, []);
+            return 'done';
+        }, ['throw' => false]);
+    }
+
+    public function testAsyncOverridesThrowTrue()
+    {
+        $this->setExpectedException(\RuntimeException::class);
+        $r = Co::wait(function () {
+            yield;
+            Co::async(function () {
+                yield;
+                throw new \RuntimeException;
+            }, true);
+            return 'done';
+        }, ['throw' => false]);
+    }
+
+    public function testAsyncOverridesThrowFalse()
+    {
+        $r = Co::wait(function () {
+            yield;
+            Co::async(function () {
+                yield;
+                throw new \RuntimeException;
+            }, false);
+            return 'done';
+        }, ['throw' => true]);
+        $this->assertEquals('done', $r);
+    }
+
     public function testWaitCurl()
     {
         $result = Co::wait([
