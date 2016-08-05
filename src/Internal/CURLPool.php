@@ -173,7 +173,7 @@ class CURLPool
     {
         $time = filter_var($time, FILTER_VALIDATE_FLOAT);
         if ($time === false) {
-            throw new \InvalidArgumentException('Delay must be integer.');
+            throw new \InvalidArgumentException('Delay must be number.');
         }
         if ($time < 0) {
             throw new \DomainException('Delay must be positive.');
