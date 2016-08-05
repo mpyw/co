@@ -132,14 +132,14 @@ static Co::wait(mixed $value, array $options = array()) : mixed
 
 #### Return Value
 
-**`(mixed)`**<br />Resolved values; within Exception-safe mode, it may contain...
+**`(mixed)`**<br />Resolved values; in exception-safe context, it may contain...
 
 - `CURLException` which has been raised internally.
 - `RuntimeException` which has been raised by user.
 
 #### Exception
 
-- Throws `CURLException` or `RuntimeException` on Exception-unsafe mode.
+- Throws `CURLException` or `RuntimeException` in exception-unsafe context.
 
 ### Co::async()
 
@@ -166,7 +166,7 @@ static Co::async(mixed $value, mixed $throw = null) : null
 
 #### Exception
 
-- `CURLException` or `RuntimeException` can be thrown when Exception-unsafe mode.<br />Note that you **CANNOT** capture top-level exceptions unless you catch **outside of `Co::wait()` call**.
+- `CURLException` or `RuntimeException` can be thrown in exception-unsafe context.<br />Note that you **CANNOT** capture top-level exceptions unless you catch **outside of `Co::wait()` call**.
 
 ### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
@@ -193,9 +193,9 @@ The rules will be applied recursively.
 
 "Generator Closure" means Closure that contains `yield` keywords.
 
-### Exception-safe or Exception-unsafe priority
+### exception-safe or exception-unsafe priority
 
-The following `yield` statements can specify Exception-safe or Exception-unsafe:
+The following `yield` statements can specify exception-safe or exception-unsafe:
 
 ```php
 yield Co::SAFE => $value
