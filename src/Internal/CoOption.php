@@ -88,7 +88,7 @@ class CoOption implements \ArrayAccess
     public function offsetGet($offset)
     {
         if (!isset($this->options[$offset])) {
-            throw new \OutOfRangeException('Undefined field: ' + $offset);
+            throw new \DomainException('Undefined field: ' + $offset);
         }
         return $this->options[$offset];
     }
@@ -123,7 +123,7 @@ class CoOption implements \ArrayAccess
     {
         foreach ($options as $key => $value) {
             if (!isset(self::$types[$key])) {
-                throw new \OutOfRangeException("Unknown option: $key");
+                throw new \DomainException("Unknown option: $key");
             }
             $validator = [__CLASS__, 'validate' . self::$types[$key]];
             $options[$key] = $validator($key, $value);

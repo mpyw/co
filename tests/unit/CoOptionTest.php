@@ -151,7 +151,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
 
         $this->specify('invalid construction', function () use ($options) {
             new CoOption(['invalid' => true]);
-        }, ['throws' => \OutOfRangeException::class]);
+        }, ['throws' => \DomainException::class]);
 
         $this->specify('invalid assignment', function () use ($options) {
             $options['pipeline'] = false;
@@ -163,7 +163,7 @@ class CoOptionTest extends \Codeception\TestCase\Test {
 
         $this->specify('Undefined field', function () use ($options){
             $options['invalid'];
-        }, ['throws' => \OutOfRangeException::class]);
+        }, ['throws' => \DomainException::class]);
     }
 
 }
