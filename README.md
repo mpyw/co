@@ -94,7 +94,7 @@ The document has moved
 Install via Composer.
 
 ```sh
-composer require mpyw/co:^1.2
+composer require mpyw/co:^1.3
 ```
 
 And require Composer autoloader in your scripts.
