@@ -53,12 +53,9 @@ class Co implements CoInterface
      * @param  mixed $value
      * @param  array $options
      * @return mixed
-     * @codeCoverageIgnore
      */
     public static function wait($value, array $options = [])
     {
-        // Coverage analyzer does not support...
-        //   try { return; } finally { }
         try {
             if (self::$self) {
                 throw new \BadMethodCallException('Co::wait() is already running. Use Co::async() instead.');
@@ -70,7 +67,9 @@ class Co implements CoInterface
         } finally {
             self::$self = null;
         }
+        // @codeCoverageIgnoreStart
     }
+    // @codeCoverageIgnoreEnd
 
     /**
      * Value is recursively resolved, but we never wait it.
