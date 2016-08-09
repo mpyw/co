@@ -5,9 +5,13 @@ require __DIR__ . '/../../vendor/autoload.php';
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
+function curl_init_with($url, array $options = [])
 {
-    $ch = curl_init($url);
+    $ch = curl_init();
+    $options = [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+    ] + $options;
     curl_setopt_array($ch, $options);
     return $ch;
 }

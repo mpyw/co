@@ -1,6 +1,6 @@
 <?php
 
-require 'vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
@@ -8,14 +8,14 @@ use mpyw\Co\CURLException;
 function curl_init_with($url, array $options = [])
 {
     $ch = curl_init();
-    $options += [
+    $options = [
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_FAILONERROR => true,
         CURLOPT_ENCODING => 'gzip',
         CURLOPT_TIMEOUT => 5,
-    ];
+    ] + $options;
     curl_setopt_array($ch, $options);
     return $ch;
 }
@@ -23,7 +23,7 @@ function curl_init_with($url, array $options = [])
 function get_github_followers_async($username, $page, &$has_more)
 {
     $dom = new DOMDocument;
-    $html = yield curl_init_with("https://github.com/$username/followers?page=$page");
+    $html = yield curl_init_with("https://github.com/$username/followers?page=$page", [CURLOPT_PRIVATE => 'followers']);
     @$dom->loadHTML($html);
     $xpath = new \DOMXPath($dom);
     $sources = [];
@@ -43,7 +43,7 @@ function download_image_async($url, $basename, $savedir = '/tmp')
         'image/png' => '.png',
         'image/gif' => '.gif',
     ];
-    $content = yield curl_init_with($url);
+    $content = yield curl_init_with($url, [CURLOPT_PRIVATE => parse_url($url, PHP_URL_HOST)]);
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $type = $finfo->buffer($content);
     $ext = isset($exts[$type]) ? $exts[$type] : '';
@@ -71,7 +71,7 @@ Co::wait(function () {
     $page = 0;
     do {
         $sources = yield get_github_followers_async(USERNAME, ++$page, $has_more);
-        yield Co::async(function () use ($sources) {
+        Co::async(function () use ($sources) {
             $requests = [];
             foreach ($sources as $username => $src) {
                 $requests[] = download_image_async($src, $username);
@@ -79,4 +79,4 @@ Co::wait(function () {
             yield $requests;
         });
     } while ($has_more);
-}, ['concurrency' => 0, 'pipeline' => true]);
+}, ['pipeline' => true]);

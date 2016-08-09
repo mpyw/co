@@ -9,9 +9,13 @@ Asynchronous cURL executor simply based on resource and Generator
 | ~5.4 | :boom: | Incompatible |
 
 ```php
-function curl_init_with($url, array $options = [CURLOPT_RETURNTRANSFER => true])
+function curl_init_with($url, array $options = [])
 {
-    $ch = curl_init($url);
+    $ch = curl_init();
+    $options = [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+    ] + $options;
     curl_setopt_array($ch, $options);
     return $ch;
 }
