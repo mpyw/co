@@ -118,7 +118,7 @@ Wait for all the cURL requests to complete.
 The options will override static defaults.
 
 ```php
-static Co::wait(mixed $value, array $options = array()) : mixed
+static Co::wait(mixed $value, array $options = []) : mixed
 ```
 
 #### Arguments

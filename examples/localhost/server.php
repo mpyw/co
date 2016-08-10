@@ -98,7 +98,7 @@ function serve()
             continue;
         }
         // child process
-        $endpoints = array(
+        $endpoints = [
             '/rest' => function ($con, $q) {
                 $sleep = isset($q['sleep']) ? (int)$q['sleep'] : 0;
                 sleep($sleep);
@@ -116,7 +116,7 @@ function serve()
             '' => function ($con, $q) {
                 respond_rest($con, 404, 'Not Found', "Undefined path\n");
             },
-        );
+        ];
         $parts = explode(' ', fgets($con));
         $parsed = parse_url($parts[1]);
         parse_str(isset($parsed['query']) ? $parsed['query'] : '', $q);
