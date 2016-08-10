@@ -50,7 +50,10 @@ var_dump(Co::wait([
         $xpath = (yield get_xpath_async('https://github.com/mpyw'));
         $src = $xpath->evaluate('string(//img[contains(@class,"avatar")]/@src)');
         echo "[Gravatar] Done! Now I download its data\n";
-        yield curl_init_with($src, [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]);
+        yield curl_init_with($src, [
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w'),
+        ]);
         echo "[Gravatar] Done! Saved as /tmp/mpyw.png\n";
     }
 
