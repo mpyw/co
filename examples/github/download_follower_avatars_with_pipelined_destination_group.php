@@ -8,14 +8,14 @@ use mpyw\Co\CURLException;
 function curl_init_with($url, array $options = [])
 {
     $ch = curl_init();
-    $options = [
+    $options += [
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_FAILONERROR => true,
         CURLOPT_ENCODING => 'gzip',
         CURLOPT_TIMEOUT => 5,
-    ] + $options;
+    ];
     curl_setopt_array($ch, $options);
     return $ch;
 }
