@@ -271,7 +271,8 @@ Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actually uses only **1 TCP 
 You don't have to increase `concurrency` if the number of destination hosts is low.  
 
 However, Co cannot read `CURLOPT_URL`. This is the limitation from PHP implemention.  
-To express that some cURL handles' destination are the same, set unique identifier using **`CURLOPT_PRIVATE`** each.
+To express that some of their destination are the same, set unique identifier for each group using **`CURLOPT_PRIVATE`**.  
+Typically you can group by `parse_url($url, PHP_URL_HOST)`.
 
 ```php
 $urls = [
