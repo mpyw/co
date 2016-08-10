@@ -33,12 +33,6 @@ class CURLPool
     private $added = [];
 
     /**
-     * Delays to be ended at.
-     * @var array
-     */
-    private $untils = [];
-
-    /**
      * React Deferreds.
      * @var Deferred
      */
@@ -57,6 +51,12 @@ class CURLPool
     private $counter;
 
     /**
+     * Delay controller.
+     * @var Delayer
+     */
+    private $delayer;
+
+    /**
      * Constructor.
      * Initialize cURL multi handle.
      * @param CoOption $options
@@ -65,6 +65,7 @@ class CURLPool
     {
         $this->options = $options;
         $this->counter = new ConnectionCounter($options);
+        $this->delayer = new Delayer;
         $this->mh = curl_multi_init();
         $flags = (int)$options['pipeline'] + (int)$options['multiplex'] * 2;
         curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
@@ -81,8 +82,8 @@ class CURLPool
             throw new \UnexpectedValueException("The cURL handle is already enqueued: $ch");
         }
         $this->counter->isPoolFilled($ch)
-            ? $this->enqueueCurl($ch, $deferred)
-            : $this->addCurl($ch, $deferred);
+            ? $this->enqueue($ch, $deferred)
+            : $this->add($ch, $deferred);
     }
 
     /**
@@ -90,7 +91,7 @@ class CURLPool
      * @param resource $ch
      * @param Deferred $deferred
      */
-    private function addCurl($ch, Deferred $deferred = null)
+    private function add($ch, Deferred $deferred = null)
     {
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
@@ -110,7 +111,7 @@ class CURLPool
      * @param resource $ch
      * @param Deferred $deferred
      */
-    private function enqueueCurl($ch, Deferred $deferred = null)
+    private function enqueue($ch, Deferred $deferred = null)
     {
         $this->queue[(string)$ch] = $ch;
         $deferred && $this->deferreds[(string)$ch] = $deferred;
@@ -123,18 +124,7 @@ class CURLPool
      */
     public function addDelay($time, Deferred $deferred)
     {
-        $time = filter_var($time, FILTER_VALIDATE_FLOAT);
-        if ($time === false) {
-            throw new \InvalidArgumentException('Delay must be number.');
-        }
-        if ($time < 0) {
-            throw new \DomainException('Delay must be positive.');
-        }
-        do {
-            $id = uniqid();
-        } while (isset($this->untils[$id]));
-        $this->untils[$id] = microtime(true) + $time;
-        $this->deferreds[$id] = $deferred;
+        $this->delayer->add($time, $deferred);
     }
 
     /**
@@ -149,10 +139,12 @@ class CURLPool
             $this->added || $this->queue
                 ? curl_multi_select($this->mh, $this->options['interval']) < 0
                   && usleep($this->options['interval'] * 1000000)
-                : $this->sleepUntilNearestTime();
+                : $this->delayer->sleep();
             curl_multi_exec($this->mh, $active);
-            $this->consumeCurlsAndUntils();
-        } while (!$this->haltException && ($this->added || $this->queue || $this->untils));
+            $entries = $this->consume();
+            $this->delayer->consumeAndResolve();
+            $this->resolve($entries);
+        } while (!$this->haltException && ($this->added || $this->queue || !$this->delayer->empty()));
         if ($this->haltException) {
             throw $this->haltException;
         }
@@ -167,42 +159,10 @@ class CURLPool
     }
 
     /**
-     * Sleep at least required.
-     */
-    private function sleepUntilNearestTime()
-    {
-        $now = microtime(true);
-        $min = null;
-        foreach ($this->untils as $id => $until) {
-            $diff = $until - $now;
-            if ($diff < 0) {
-                // @codeCoverageIgnoreStart
-                return;
-                // @codeCoverageIgnoreEnd
-            }
-            if ($min !== null && $diff >= $min) {
-                continue;
-            }
-            $min = $diff;
-        }
-        $min && usleep($min * 1000000);
-    }
-
-    /**
-     * Consume completed cURL handles and delays.
-     */
-    private function consumeCurlsAndUntils()
-    {
-        $entries = $this->consumeCurls();
-        $this->consumeUntils();
-        $this->resolveCurls($entries);
-    }
-
-    /**
      * Poll completed cURL entries and consume cURL queue.
      * @return array
      */
-    private function consumeCurls()
+    private function consume()
     {
         $entries = [];
         // DO NOT call curl_multi_add_handle() until polling done
@@ -219,26 +179,10 @@ class CURLPool
     }
 
     /**
-     * Consume delay queue.
-     */
-    private function consumeUntils()
-    {
-        foreach ($this->untils as $id => $until) {
-            $diff = $until - microtime(true);
-            if ($diff > 0.0 || !isset($this->deferreds[$id])) {
-                continue;
-            }
-            $deferred = $this->deferreds[$id];
-            unset($this->deferreds[$id], $this->untils[$id]);
-            $deferred->resolve(null);
-        }
-    }
-
-    /**
      * Resolve polled cURLs.
      * @param  array $entries Polled cURL entries.
      */
-    private function resolveCurls($entries)
+    private function resolve($entries)
     {
         foreach ($entries as $entry) {
             if (!isset($this->deferreds[(string)$entry['handle']])) {
