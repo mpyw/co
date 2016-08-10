@@ -12,6 +12,7 @@ class CoOption implements \ArrayAccess
         'throw' => 'Bool', // Throw CURLExceptions?
         'pipeline' => 'Bool', // Use HTTP/1.1 pipelining?
         'multiplex' => 'Bool', // Use HTTP/2 multiplexing?
+        'group' => 'Bool', // Group the same destinations specified by CURLOPT_PRIVATE?
         'interval' => 'NaturalFloat', // curl_multi_select() timeout
         'concurrency' => 'NaturalInt', // Limit of TCP connections
     ];
@@ -24,6 +25,7 @@ class CoOption implements \ArrayAccess
         'throw' => true,
         'pipeline' => false,
         'multiplex' => true,
+        'group' => true,
         'interval' => 0.002,
         'concurrency' => 6,
     ];

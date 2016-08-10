@@ -134,6 +134,7 @@ static Co::wait(mixed $value, array $options = []) : mixed
 | `throw` | **`true`** | Whether to throw or capture `CURLException` on cURL errors.<br />Whether to propagate or capture `RuntimeException` thrown in Generator.|
 | `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ is required. |
 | `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
+| `group` | **`true`** | Whether to group cURL handles by `CURLOPT_PRIVATE`.<br />The detail of this feature is described below.|
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
 | `concurrency` | **`6`** | cURL execution pool size. `0` means unlimited.<br />The value should be within `10` at most.|
 
