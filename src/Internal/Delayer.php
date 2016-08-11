@@ -12,7 +12,7 @@ class Delayer
     private $untils = [];
 
     /**
-     * React Deferreds.
+     * Deferreds.
      * @var Deferred
      */
     private $deferreds = [];

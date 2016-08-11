@@ -88,7 +88,7 @@ class ConnectionCounter
     }
 
     /**
-     * Push into queue.
+     * Get group identifier.
      * @param resource $ch
      * @return string
      */

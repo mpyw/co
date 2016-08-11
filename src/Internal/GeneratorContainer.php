@@ -19,7 +19,7 @@ class GeneratorContainer
 
     /**
      * Thrown exception.
-     * @var \Throwable|\Exception
+     * @var \RuntimeException
      */
     private $e;
 

@@ -31,7 +31,7 @@ class CURLPool
     private $added = [];
 
     /**
-     * React Deferreds.
+     * Deferreds.
      * @var Deferred
      */
     private $deferreds = [];
