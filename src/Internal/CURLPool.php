@@ -1,8 +1,6 @@
 <?php
 
 namespace mpyw\Co\Internal;
-use mpyw\Co\Co;
-use mpyw\Co\Internal\CoOption;
 use mpyw\Co\CURLException;
 use mpyw\RuntimePromise\Deferred;
 
