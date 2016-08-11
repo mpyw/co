@@ -8,10 +8,10 @@ use mpyw\Co\CURLException;
 function curl_init_with($url, array $options = [])
 {
     $ch = curl_init();
-    $options += [
+    $options = array_replace([
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
-    ];
+    ], $options);
     curl_setopt_array($ch, $options);
     return $ch;
 }
@@ -50,10 +50,7 @@ var_dump(Co::wait([
         $xpath = (yield get_xpath_async('https://github.com/mpyw'));
         $src = $xpath->evaluate('string(//img[contains(@class,"avatar")]/@src)');
         echo "[Gravatar] Done! Now I download its data\n";
-        yield curl_init_with($src, [
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w'),
-        ]);
+        yield curl_init_with($src, [CURLOPT_FILE => fopen('/tmp/mpyw.png', 'w')]);
         echo "[Gravatar] Done! Saved as /tmp/mpyw.png\n";
     }
 
