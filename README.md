@@ -233,7 +233,7 @@ $results = yield [
 #### Context on `Co::wait()`
 
 **Exception-unsafe** context by default.  
-The following setting specifies Exception-safe context.
+The following setting specifies exception-safe context.
 
 ```php
 $result = Co::wait([$ch1, $ch2], ['throw' => false]);
