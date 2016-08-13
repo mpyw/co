@@ -2,7 +2,6 @@
 
 use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\GeneratorContainer;
-use mpyw\Co\Internal\CoOption;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 
@@ -30,16 +29,6 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $con = self::$GeneratorContainer::new($gen);
         $this->assertEquals($gen, $con->g);
         $this->assertEquals(spl_object_hash($gen), $con->h);
-        $this->assertInstanceOf(CoOption::class, $con->options);
-    }
-
-    public function testConstructorOverrideOption()
-    {
-        $gen = (function () { yield 1; })();
-        $con = self::$GeneratorContainer::new($gen, new CoOption(['throw' => true]), CoInterface::SAFE);
-        $this->assertFalse($con->options['throw']);
-        $con = self::$GeneratorContainer::new($gen, new CoOption(['throw' => false]), CoInterface::UNSAFE);
-        $this->assertTrue($con->options['throw']);
     }
 
     public function testToString()
@@ -47,14 +36,6 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
         $gen = (function () { yield 1; })();
         $con = new GeneratorContainer($gen);
         $this->assertEquals(spl_object_hash($gen), (string)$con);
-    }
-
-    public function testGetOptions()
-    {
-        $options = new CoOption;
-        $gen = (function () { yield 1; })();
-        $con = new GeneratorContainer($gen, $options);
-        $this->assertSame($options, $con->getOptions());
     }
 
     public function testNormalFlow()
@@ -111,10 +92,6 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
             yield null;
             yield null;
         };
-        $con = new GeneratorContainer($genfunc(), new CoOption(['throw' => false]));
-        $this->assertFalse($con->valid());
-        $this->assertFalse($con->thrown());
-        $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());
         $con = new GeneratorContainer($genfunc());
         $this->assertFalse($con->valid());
         $this->assertTrue($con->thrown());
@@ -124,12 +101,15 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
     public function testExternalException()
     {
         $gen = (function () {
-            $this->assertInstanceOf(\RuntimeException::class, yield null);
+            $this->assertInstanceOf(\RuntimeException::class, yield CoInterface::SAFE => null);
             yield null;
         })();
-        $con = new GeneratorContainer($gen, new CoOption(['throw' => false]));
-        $this->assertFalse($con->throwAcceptable());
-        $con->throwAcceptable() ? $con->throw_(new \RuntimeException) : $con->send(new \RuntimeException);
+        $con = new GeneratorContainer($gen);
+
+        $con->key() === CoInterface::SAFE
+            ? $con->send(new \RuntimeException)
+            : $con->throw_(new \RuntimeException);
+
         $this->assertTrue($con->valid());
         $this->assertFalse($con->thrown());
 
@@ -138,8 +118,11 @@ class GeneratorContainerTest extends \Codeception\TestCase\Test {
             yield null;
         })();
         $con = new GeneratorContainer($gen);
-        $this->assertTrue($con->throwAcceptable());
-        $con->throwAcceptable() ? $con->throw_(new \RuntimeException) : $con->send(new \RuntimeException);
+
+        $con->key() === CoInterface::SAFE
+            ? $con->send(new \RuntimeException)
+            : $con->throw_(new \RuntimeException);
+
         $this->assertFalse($con->valid());
         $this->assertTrue($con->thrown());
         $this->assertInstanceOf(\RuntimeException::class, $con->getReturnOrThrown());

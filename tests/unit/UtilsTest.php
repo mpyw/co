@@ -110,7 +110,6 @@ class UtilsTest extends \Codeception\TestCase\Test {
 
     public function testNormalizeWithYieldKeysOnGeneratorFunction()
     {
-        $options = new CoOption;
         $genfunc = function () {
             yield CoInterface::SAFE => function () {
                 throw new \RuntimeException;
@@ -123,25 +122,33 @@ class UtilsTest extends \Codeception\TestCase\Test {
             yield null;
         };
 
-        $gen1 = Utils::normalize($genfunc, $options);
+        $gen1 = Utils::normalize($genfunc);
         $this->assertInstanceOf(GeneratorContainer::class, $gen1);
         $this->assertTrue($gen1->valid());
         $this->assertEquals(CoInterface::SAFE, $gen1->key());
         $this->assertInstanceOf(\Closure::class, $gen1->current());
 
-        $gen2 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+        $gen2 = Utils::normalize($gen1->current(), $gen1->key());
         $this->assertInstanceOf(GeneratorContainer::class, $gen2);
         $this->assertFalse($gen2->valid());
-        $this->assertFalse($gen2->thrown());
+        $this->assertTrue($gen2->thrown());
         $this->assertInstanceOf(\RuntimeException::class, $gen2->getReturnOrThrown());
 
-        $gen1->send(null);
+        $gen2->getYieldKey() === CoInterface::SAFE
+            ? $gen1->send($gen2->getReturnOrThrown())
+            : $gen1->throw_($gen2->getReturnOrThrown());
+        $this->assertTrue($gen1->valid());
 
-        $gen3 = Utils::normalize($gen1->current(), $gen1->getOptions(), $gen1->key());
+        $gen3 = Utils::normalize($gen1->current(), $gen1->key());
         $this->assertInstanceOf(GeneratorContainer::class, $gen3);
         $this->assertFalse($gen3->valid());
         $this->assertTrue($gen3->thrown());
-        $this->assertInstanceOf(\RuntimeException::class, $gen2->getReturnOrThrown());
+        $this->assertInstanceOf(\RuntimeException::class, $gen3->getReturnOrThrown());
+
+        $gen3->getYieldKey() === CoInterface::SAFE
+            ? $gen1->send($gen3->getReturnOrThrown())
+            : $gen1->throw_($gen3->getReturnOrThrown());
+        $this->assertFalse($gen1->valid());
     }
 
     public function testGetYieldables()

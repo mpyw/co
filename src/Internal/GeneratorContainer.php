@@ -24,41 +24,30 @@ class GeneratorContainer
     private $e;
 
     /**
-     * Default options.
-     * @var CoOption
+     * Parent yield key.
+     * @var mixed
      */
-    private $options;
+    private $yieldKey;
 
     /**
      * Constructor.
      * @param \Generator $g
-     * @param CoOption  $options
-     * @param mixed     $yield_key
      */
-    public function __construct(\Generator $g, CoOption $options = null, $yield_key = null)
+    public function __construct(\Generator $g, $yield_key = null)
     {
         $this->g = $g;
         $this->h = spl_object_hash($g);
-        if ($options === null) {
-            $options = new CoOption;
-        }
-        if ($yield_key === CoInterface::SAFE) {
-            $options = $options->reconfigure(['throw' => false]);
-        }
-        if ($yield_key === CoInterface::UNSAFE) {
-            $options = $options->reconfigure(['throw' => true]);
-        }
-        $this->options = $options;
+        $this->yieldKey = $yield_key;
         $this->valid();
     }
 
     /**
-     * Return options.
-     * @return CoOption
+     * Return parent yield key.
+     * @return mixed
      */
-    public function getOptions()
+    public function getYieldKey()
     {
-        return $this->options;
+        return $this->yieldKey;
     }
 
     /**
@@ -138,23 +127,12 @@ class GeneratorContainer
     }
 
     /**
-     * Return whether generator accepts exceptions thrown.
-     * @return bool
-     */
-    public function throwAcceptable()
-    {
-        $this->validateValidity();
-        return $this->g->key() === CoInterface::UNSAFE ||
-               $this->g->key() !== CoInterface::SAFE && $this->options['throw'];
-    }
-
-    /**
      * Return whether exception is thrown.
      * @return bool
      */
     public function thrown()
     {
-        return $this->e !== null && $this->options['throw'];
+        return $this->e !== null;
     }
 
     /**

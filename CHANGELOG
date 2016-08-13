@@ -1,6 +1,14 @@
 mpyw/co - changelog
 ===================
 
+1.4.0 (2016-08-13)
+------------------
+
+INCOMPATIBLE CHANGES!! Fix issue #18
+
+- Disabled Exception-safe/Exception-unsafe inheritances
+- Removed `Co::UNSAFE`
+
 1.3.2 (2016-08-12)
 ------------------
 

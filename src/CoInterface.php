@@ -8,7 +8,6 @@ interface CoInterface
     const RETURN_ = '__RETURN_WITH__'; // alias
     const RET = '__RETURN_WITH__'; // alias
     const RTN = '__RETURN_WITH__'; // alias
-    const UNSAFE = '__UNSAFE__';
     const SAFE = '__SAFE__';
     const DELAY = '__DELAY__';
     const SLEEP = '__DELAY__'; // alias

@@ -109,15 +109,19 @@ class Co implements CoInterface
     {
         $deferred = new Deferred;
         // For convenience, all values are wrapped into generator
-        $genfunc = function () use ($value, &$return) {
+        $genfunc = function () use ($throw, $value, &$return) {
             try {
-                $return = (yield $value);
+                if ($throw !== null) {
+                    $key = $throw ? null : CoInterface::SAFE;
+                } else {
+                    $key = $this->options['throw'] ? null : CoInterface::SAFE;
+                }
+                $return = (yield $key => $value);
             } catch (\RuntimeException $e) {
                 $this->pool->reserveHaltException($e);
             }
         };
-        $options = $throw === null ? $this->options : $this->options->reconfigure(['throw' => $throw]);
-        $con = Utils::normalize($genfunc, $options);
+        $con = Utils::normalize($genfunc);
         // We have to provide deferred object only if $wait
         $this->processGeneratorContainer($con, $deferred);
         // We have to wait $return only if $wait
@@ -142,7 +146,7 @@ class Co implements CoInterface
                 return;
             }
             // Now we normalize returned value
-            $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getOptions());
+            $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getYieldKey());
             $yieldables = Utils::getYieldables($returned);
             // If normalized value contains yieldables, we have to chain resolver
             if ($yieldables) {
@@ -170,7 +174,7 @@ class Co implements CoInterface
         }
 
         // Now we normalize yielded value
-        $yielded = Utils::normalize($gc->current(), $gc->getOptions(), $gc->key());
+        $yielded = Utils::normalize($gc->current());
         $yieldables = Utils::getYieldables($yielded);
         if (!$yieldables) {
             // If there are no yieldables, send yielded value back into generator
@@ -181,7 +185,7 @@ class Co implements CoInterface
         }
 
         // Chain resolver
-        $this->promiseAll($yieldables, $gc->throwAcceptable())->then(
+        $this->promiseAll($yieldables, $gc->key() !== CoInterface::SAFE)->then(
             self::getApplier($yielded, $yieldables, [$gc, 'send']),
             [$gc, 'throw_']
         )->always(function () use ($gc, $deferred) {

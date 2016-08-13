@@ -122,13 +122,12 @@ class CoTest extends \Codeception\TestCase\Test {
     public function testAsyncOverridesThrowTrue()
     {
         $this->setExpectedException(\RuntimeException::class);
-        $r = Co::wait(function () {
+        Co::wait(function () {
             yield;
             Co::async(function () {
                 yield;
                 throw new \RuntimeException;
             }, true);
-            return 'done';
         }, ['throw' => false]);
     }
 
@@ -171,17 +170,21 @@ class CoTest extends \Codeception\TestCase\Test {
         ], $result);
     }
 
-    public function testRuntimeExceptionHandling()
+    public function testRuntimeExceptionCaptured()
     {
         $e = Co::wait(function () {
-            $e = yield function () {
+            $e = yield Co::SAFE => function () {
                 yield;
                 throw new \RuntimeException;
             };
             $this->assertInstanceOf(\RuntimeException::class, $e);
             return $e;
-        }, ['throw' => false]);
+        });
         $this->assertInstanceOf(\RuntimeException::class, $e);
+    }
+
+    public function testRuntimeExceptionThrown()
+    {
         $this->setExpectedException(\RuntimeException::class);
         Co::wait(function () {
             yield function () {
@@ -189,6 +192,33 @@ class CoTest extends \Codeception\TestCase\Test {
                 throw new \RuntimeException;
             };
         });
+    }
+
+    public function testRuntimeExceptionTrappedTopLevel()
+    {
+        $e = Co::wait(function () {
+            yield function () {
+                yield;
+                throw new \RuntimeException;
+            };
+        }, ['throw' => false]);
+        $this->assertInstanceOf(\RuntimeException::class, $e);
+    }
+
+    public function testRuntimeExceptionCapturedDerivedFromReturn()
+    {
+        $e = Co::wait(function () {
+            $e = yield Co::SAFE => function () {
+                return function () {
+                    yield;
+                    throw new \RuntimeException;
+                };
+                yield;
+            };
+            $this->assertInstanceOf(\RuntimeException::class, $e);
+            return $e;
+        });
+        $this->assertInstanceOf(\RuntimeException::class, $e);
     }
 
     public function testLogicExceptionHandling()
@@ -245,7 +275,6 @@ class CoTest extends \Codeception\TestCase\Test {
     {
         $expected = ['Response[1]', 'Response[4]'];
         $actual = Co::wait([new DummyCurl('1', 5), function () {
-
             $y = yield Co::SAFE => [
                 new DummyCurl('2', 3),
                 function () {
@@ -256,30 +285,29 @@ class CoTest extends \Codeception\TestCase\Test {
             $this->assertEquals('Response[2]', $y[0]);
             $this->assertInstanceOf(\RuntimeException::class, $y[1]);
             $this->assertEquals('01', $y[1]->getMessage());
-
             $y = yield Co::SAFE => [
                 function () {
                     $this->assertEquals('Response[3]', yield new DummyCurl('3', 1));
-                    $y = yield function () {
+                    $y = yield Co::SAFE => function () {
                         yield;
                         throw new \RuntimeException('02');
                     };
                     $this->assertInstanceOf(\RuntimeException::class, $y);
                     $this->assertEquals('02', $y->getMessage());
-                    yield Co::UNSAFE => function () {
+                    yield Co::SAFE => function () {
                         yield;
                         throw new \RuntimeException('03');
                     };
                     $this->assertTrue(false);
                 },
                 function () {
-                    $y = yield function () {
+                    $y = yield Co::SAFE => function () {
                         yield;
                         throw new \RuntimeException('04');
                     };
                     $this->assertInstanceOf(\RuntimeException::class, $y);
                     $this->assertEquals('04', $y->getMessage());
-                    yield Co::UNSAFE => function () {
+                    yield Co::SAFE => function () {
                         yield;
                         throw new \RuntimeException('05');
                     };
@@ -287,9 +315,9 @@ class CoTest extends \Codeception\TestCase\Test {
                 }
             ];
             $y = yield Co::SAFE => function () {
-                yield Co::UNSAFE => function () {
+                yield function () {
                     $y = yield Co::SAFE => function () {
-                        yield Co::UNSAFE => function () {
+                        yield function () {
                             yield new DummyCurl('invalid', 1, true);
                         };
                     };

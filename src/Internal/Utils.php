@@ -10,22 +10,21 @@ class Utils {
      *   Array              -> Array (children's are normalized)
      *   Others             -> Others
      * @param  mixed    $value
-     * @param  CoOption $options
      * @param  mixed    $yield_key
      * @return mixed
      */
-    public static function normalize($value, CoOption $options, $yield_key = null)
+    public static function normalize($value, $yield_key = null)
     {
         if (self::isGeneratorClosure($value)) {
             $value = $value();
         }
         if ($value instanceof \Generator) {
-            return new GeneratorContainer($value, $options, $yield_key);
+            return new GeneratorContainer($value, $yield_key);
         }
         if (is_array($value)) {
             $tmp = [];
             foreach ($value as $k => $v) {
-                $tmp[$k] = self::normalize($v, $options, $yield_key);
+                $tmp[$k] = self::normalize($v, $yield_key);
             }
             return $tmp;
         }

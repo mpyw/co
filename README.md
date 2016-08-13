@@ -128,7 +128,7 @@ static Co::wait(mixed $value, array $options = []) : mixed
 
 | Key | Default | Description |
 |:---:|:---:|:---|
-| `throw` | **`true`** | Whether to throw or capture `CURLException` on cURL errors.<br />Whether to propagate or capture `RuntimeException` thrown in Generator.|
+| `throw` | **`true`** | Whether to throw or capture `CURLException` or `RuntimeException` on top-level.|
 | `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ is required. |
 | `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
 | `group` | **`true`** | Whether to group cURL handles by `CURLOPT_PRIVATE`.<br />The detail of this feature is described below.|
@@ -198,22 +198,82 @@ The rules will be applied recursively.
 
 "Generator Closure" means Closure that contains `yield` keywords.
 
-### exception-safe or exception-unsafe priority
+### Exception-safe or Exception-unsafe priority
 
-The following `yield` statements can specify exception-safe or exception-unsafe:
+#### Context in Generator
+
+**Exception-unsafe context by default.**  
+The following `yield` statement specifies exception-safe context.
 
 ```php
-yield Co::SAFE => $value
-yield Co::UNSAFE => $value
+$results = yield Co::SAFE => [$ch1, $ch2];
 ```
 
-Option priority:
+This is equivalent to:
 
-1. `yield` in current scope
-2. `yield` in parent scope
-3. `$throw` in `Co::async()` argument
-4. `throw` in `Co::wait()` options
-5. `throw` in static default options
+```php
+$results = yield [
+    function () {
+        try {
+            return yield $ch1;
+        } catch (\RuntimeException $e) {
+            return $e;
+        }
+    },
+    function () {
+        try {
+            return yield $ch2;
+        } catch (\RuntimeException $e) {
+            return $e;
+        }
+    },
+];
+```
+
+#### Context on `Co::wait()`
+
+**Exception-unsafe context by default.**  
+The following setting specifies exception-safe context.
+
+```php
+$result = Co::wait([$ch1, $ch2], ['throw' => false]);
+```
+
+This is equivalent to:
+
+```php
+$results = Co::wait([
+    function () {
+        try {
+            return yield $ch1;
+        } catch (\RuntimeException $e) {
+            return $e;
+        }
+    },
+    function () {
+        try {
+            return yield $ch2;
+        } catch (\RuntimeException $e) {
+            return $e;
+        }
+    },
+]);
+```
+
+#### Context on `Co::async()`
+
+**Contexts are inherited from `Co::wait()`.**  
+The following setting overrides parent context as exception-safe.
+
+```
+Co::async($value, false);
+```
+
+The following setting overrides parent context as exception-unsafe.
+
+```
+Co::async($value, true);
+```
 
 ### Pseudo-sleep for each coroutine
 
