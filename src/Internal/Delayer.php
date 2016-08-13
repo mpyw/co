@@ -80,7 +80,7 @@ class Delayer
      * Is $untils empty?
      * @return bool
      */
-    public function empty()
+    public function isEmpty()
     {
         return !$this->untils;
     }

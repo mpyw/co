@@ -142,7 +142,7 @@ class CURLPool
             $entries = $this->consume();
             $this->delayer->consumeAndResolve();
             $this->resolve($entries);
-        } while (!$this->haltException && ($this->added || $this->queue || !$this->delayer->empty()));
+        } while (!$this->haltException && ($this->added || $this->queue || !$this->delayer->isEmpty()));
         if ($this->haltException) {
             throw $this->haltException;
         }
