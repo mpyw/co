@@ -202,7 +202,7 @@ The rules will be applied recursively.
 
 #### Context in Generator
 
-**Exception-unsafe context by default.**  
+**Exception-unsafe** context by default.  
 The following `yield` statement specifies exception-safe context.
 
 ```php
@@ -232,8 +232,8 @@ $results = yield [
 
 #### Context on `Co::wait()`
 
-**Exception-unsafe context by default.**  
-The following setting specifies exception-safe context.
+**Exception-unsafe** context by default.  
+The following setting specifies Exception-safe context.
 
 ```php
 $result = Co::wait([$ch1, $ch2], ['throw' => false]);
@@ -262,16 +262,16 @@ $results = Co::wait([
 
 #### Context on `Co::async()`
 
-**Contexts are inherited from `Co::wait()`.**  
+Contexts are **inherited** from `Co::wait()`.  
 The following setting overrides parent context as exception-safe.
 
-```
+```php
 Co::async($value, false);
 ```
 
 The following setting overrides parent context as exception-unsafe.
 
-```
+```php
 Co::async($value, true);
 ```
 
