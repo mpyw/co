@@ -114,22 +114,11 @@ class Co implements CoInterface
     private function start($value, $wait = true, $throw = null)
     {
         $deferred = new Deferred;
+        $return = null;
         // For convenience, all values are wrapped into generator
-        $genfunc = function () use ($throw, $value, &$return) {
-            try {
-                if ($throw !== null) {
-                    $key = $throw ? null : CoInterface::SAFE;
-                } else {
-                    $key = $this->options['throw'] ? null : CoInterface::SAFE;
-                }
-                $return = (yield $key => $value);
-            } catch (\RuntimeException $e) {
-                $this->pool->reserveHaltException($e);
-            }
-        };
-        $con = Utils::normalize($genfunc);
+        $con = Utils::normalize($this->getRootGenerator($throw, $value, $return));
         // We have to provide deferred object only if $wait
-        $this->processGeneratorContainer($con, $deferred);
+        $this->processGeneratorContainerRunning($con, $deferred);
         // We have to wait $return only if $wait
         if ($wait) {
             $this->pool->wait();
@@ -144,36 +133,63 @@ class Co implements CoInterface
      */
     private function processGeneratorContainer(GeneratorContainer $gc, Deferred $deferred)
     {
-        // If generator has no more yields...
-        if (!$gc->valid()) {
-            // If exception has been thrown in generator, we have to propagate it as rejected value
-            if ($gc->thrown()) {
-                $deferred->reject($gc->getReturnOrThrown());
-                return;
-            }
-            // Now we normalize returned value
-            $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getYieldKey());
-            $yieldables = Utils::getYieldables($returned);
-            // If normalized value contains yieldables, we have to chain resolver
-            if ($yieldables) {
-                $this->promiseAll($yieldables, true)->then(
-                    self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
-                    [$deferred, 'reject']
-                );
-                return;
-            }
-            // Propagate normalized returned value
-            $deferred->resolve($returned);
+        $gc->valid()
+        ? $this->processGeneratorContainerRunning($gc, $deferred)
+        : $this->processGeneratorContainerDone($gc, $deferred);
+    }
+
+    /**
+     * Handle resolving generators already done.
+     * @param  GeneratorContainer $gc
+     * @param  Deferred           $deferred
+     */
+    private function processGeneratorContainerDone(GeneratorContainer $gc, Deferred $deferred)
+    {
+        // If exception has been thrown in generator, we have to propagate it as rejected value
+        if ($gc->thrown()) {
+            $deferred->reject($gc->getReturnOrThrown());
             return;
         }
 
+        // Now we normalize returned value
+        $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getYieldKey());
+        $yieldables = Utils::getYieldables($returned, [], $this->runners);
+
+        // If normalized value contains yieldables, we have to chain resolver
+        if ($yieldables) {
+            $this
+            ->promiseAll($yieldables, true)
+            ->then(
+                self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
+                [$deferred, 'reject']
+            )
+            ->always(function () use ($yieldables) {
+                $this->runners = array_diff_key($this->runners, $yieldables);
+            });
+            return;
+        }
+
+        // Propagate normalized returned value
+        $deferred->resolve($returned);
+    }
+
+    /**
+     * Handle resolving generators still running.
+     * @param  GeneratorContainer $gc
+     * @param  Deferred           $deferred
+     */
+    private function processGeneratorContainerRunning(GeneratorContainer $gc, Deferred $deferred)
+    {
         // Check delay request yields
         if ($gc->key() === CoInterface::DELAY) {
             $dfd = new Deferred;
             $this->pool->addDelay($gc->current(), $dfd);
-            $dfd->promise()->then(function () use ($gc) {
+            $dfd
+            ->promise()
+            ->then(function () use ($gc) {
                 $gc->send(null);
-            })->always(function () use ($gc, $deferred) {
+            })
+            ->always(function () use ($gc, $deferred) {
                 $this->processGeneratorContainer($gc, $deferred);
             });
             return;
@@ -191,13 +207,36 @@ class Co implements CoInterface
         }
 
         // Chain resolver
-        $this->promiseAll($yieldables, $gc->key() !== CoInterface::SAFE)->then(
+        $this
+        ->promiseAll($yieldables, $gc->key() !== CoInterface::SAFE)
+        ->then(
             self::getApplier($yielded, $yieldables, [$gc, 'send']),
             [$gc, 'throw_']
-        )->always(function () use ($gc, $deferred) {
+        )->always(function () use ($gc, $deferred, $yieldables) {
             // Continue
+            $this->runners = array_diff_key($this->runners, $yieldables);
             $this->processGeneratorContainer($gc, $deferred);
         });
+    }
+
+    /**
+     * Return root wrapper generator.
+     * @param  mixed  $throw
+     * @param  mixed  $value
+     * @param  mixed  &$return
+     */
+    private function getRootGenerator($throw, $value, &$return)
+    {
+        try {
+            if ($throw !== null) {
+                $key = $throw ? null : CoInterface::SAFE;
+            } else {
+                $key = $this->options['throw'] ? null : CoInterface::SAFE;
+            }
+            $return = (yield $key => $value);
+        } catch (\RuntimeException $e) {
+            $this->pool->reserveHaltException($e);
+        }
     }
 
     /**
@@ -236,12 +275,7 @@ class Co implements CoInterface
             // If caller cannot accept exception,
             // we handle rejected value as resolved.
             if (!$throw_acceptable) {
-                $original_dfd = $dfd;
-                $dfd = new Deferred;
-                $absorber = function ($any) use ($original_dfd) {
-                    $original_dfd->resolve($any);
-                };
-                $dfd->promise()->then($absorber, $absorber);
+                $dfd = self::deferredSafe($dfd);
             }
             // Add or enqueue cURL handles
             if (Utils::isCurl($yieldable['value'])) {
@@ -255,5 +289,20 @@ class Co implements CoInterface
             }
         }
         return \mpyw\RuntimePromise\all($promises);
+    }
+
+    /**
+     * Return Deferred that absorbs rejects.
+     * @param  Deferred $original_dfd
+     * @return Deferred
+     */
+    private static function deferredSafe($original_dfd)
+    {
+        $dfd = new Deferred;
+        $absorber = function ($any) use ($original_dfd) {
+            $original_dfd->resolve($any);
+        };
+        $dfd->promise()->then($absorber, $absorber);
+        return $dfd;
     }
 }
