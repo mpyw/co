@@ -38,14 +38,18 @@ class Utils {
      *   keylist -> position of the value. nests are represented as array values.
      * @param  mixed $value   Must be already normalized.
      * @param  array $keylist Internally used.
+     * @param  array &$runners Running cURL or Generator identifiers.
      * @return array
      */
-    public static function getYieldables($value, array $keylist = [])
+    public static function getYieldables($value, array $keylist = [], array &$runners = [])
     {
         $r = [];
         if (!is_array($value)) {
             if (self::isCurl($value) || self::isGeneratorContainer($value)) {
-                $r[(string)$value] = [
+                if (isset($runners[(string)$value])) {
+                    throw new \DomainException('Duplicated cURL resource or Generator instance found.');
+                }
+                $r[(string)$value] = $runners[(string)$value] = [
                     'value' => $value,
                     'keylist' => $keylist,
                 ];
@@ -54,7 +58,7 @@ class Utils {
         }
         foreach ($value as $k => $v) {
             $newlist = array_merge($keylist, [$k]);
-            $r = array_merge($r, self::getYieldables($v, $newlist));
+            $r = array_merge($r, self::getYieldables($v, $newlist, $runners));
         }
         return $r;
     }

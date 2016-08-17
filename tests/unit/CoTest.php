@@ -427,4 +427,47 @@ class CoTest extends \Codeception\TestCase\Test {
             }
         ]);
     }
+
+    public function testDuplicatedGenerators()
+    {
+        $this->setExpectedException(\DomainException::class);
+        $func = function () {
+            yield Co::DELAY => 0.01;
+        };
+        $gen = $func();
+        Co::wait([$gen, $gen]);
+    }
+
+    public function testDuplicatedAdd()
+    {
+        $this->setExpectedException(\DomainException::class, 'Duplicated cURL resource or Generator instance found.');
+        Co::wait([
+            new DummyCurl('A', 2),
+            new DummyCurl('B', 3),
+            new DummyCurl('C', 4),
+            new DummyCurl('C', 5),
+        ], ['concurrency' => 4]);
+    }
+
+    public function testDuplicatedEnqueue()
+    {
+        $this->setExpectedException(\DomainException::class, 'Duplicated cURL resource or Generator instance found.');
+        Co::wait([
+            new DummyCurl('A', 2),
+            new DummyCurl('B', 3),
+            new DummyCurl('C', 4),
+            new DummyCurl('C', 5),
+        ], ['concurrency' => 2]);
+    }
+
+    public function testDuplicatedBetweenAddAndEnqueue()
+    {
+        $this->setExpectedException(\DomainException::class, 'Duplicated cURL resource or Generator instance found.');
+        Co::wait([
+            new DummyCurl('A', 2),
+            new DummyCurl('B', 3),
+            new DummyCurl('C', 4),
+            new DummyCurl('C', 5),
+        ], ['concurrency' => 3]);
+    }
 }

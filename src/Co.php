@@ -30,6 +30,12 @@ class Co implements CoInterface
     private $pool;
 
     /**
+     * Running cURL or Generator identifiers.
+     * @var array
+     */
+    private $runners = [];
+
+    /**
      * Overwrite CoOption default.
      * @param array $options
      */
@@ -175,7 +181,7 @@ class Co implements CoInterface
 
         // Now we normalize yielded value
         $yielded = Utils::normalize($gc->current());
-        $yieldables = Utils::getYieldables($yielded);
+        $yieldables = Utils::getYieldables($yielded, [], $this->runners);
         if (!$yieldables) {
             // If there are no yieldables, send yielded value back into generator
             $gc->send($yielded);

@@ -92,54 +92,6 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
         }
     }
 
-    public function testDuplicatedAdd()
-    {
-        $pool = new CURLPool(new CoOption(['concurrency' => 4]));
-        $a = new Deferred;
-        $curls = [
-            new DummyCurl('A', 2),
-            new DummyCurl('B', 3),
-            new DummyCurl('C', 4),
-            new DummyCurl('C', 5),
-        ];
-        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
-        foreach ($curls as $ch) {
-            $pool->addOrEnqueue($ch);
-        }
-    }
-
-    public function testDuplicatedEnqueue()
-    {
-        $pool = new CURLPool(new CoOption(['concurrency' => 2]));
-        $a = new Deferred;
-        $curls = [
-            new DummyCurl('A', 2),
-            new DummyCurl('B', 3),
-            new DummyCurl('C', 4),
-            new DummyCurl('C', 5),
-        ];
-        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
-        foreach ($curls as $ch) {
-            $pool->addOrEnqueue($ch);
-        }
-    }
-
-    public function testDuplicatedBetweenAddAndEnqueue()
-    {
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
-        $a = new Deferred;
-        $curls = [
-            new DummyCurl('A', 2),
-            new DummyCurl('B', 3),
-            new DummyCurl('C', 4),
-            new DummyCurl('C', 5),
-        ];
-        $this->setExpectedException(\UnexpectedValueException::class, 'The cURL handle is already enqueued: DummyCurl[C]');
-        foreach ($curls as $ch) {
-            $pool->addOrEnqueue($ch);
-        }
-    }
-
     public function testWaitCurlAndDelay()
     {
         $pool = new CURLPool(new CoOption(['concurrency' => 3]));

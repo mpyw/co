@@ -76,9 +76,6 @@ class CURLPool
      */
     public function addOrEnqueue($ch, Deferred $deferred = null)
     {
-        if (isset($this->added[(string)$ch]) || isset($this->queue[(string)$ch])) {
-            throw new \UnexpectedValueException("The cURL handle is already enqueued: $ch");
-        }
         $this->counter->isPoolFilled($ch)
             ? $this->enqueue($ch, $deferred)
             : $this->add($ch, $deferred);
