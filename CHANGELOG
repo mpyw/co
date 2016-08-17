@@ -1,6 +1,16 @@
 mpyw/co - changelog
 ===================
 
+1.4.1 (2016-08-18)
+------------------
+
+Fix issue #20
+
++ cURL duplication check was tested in CURLPool class, however,
+  that was not working on Co::wait() calls.
+  From now on it is tested on Utils::getYieldables().
++ Generator duplication check is newly added.
+
 1.4.0 (2016-08-13)
 ------------------
 
