@@ -4,43 +4,31 @@ namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use mpyw\RuntimePromise\Deferred;
 
-class Scheduler
+abstract class AbstractScheduler
 {
     /**
      * cURL multi handle.
      * @var resource
      */
-    private $mh;
+    protected $mh;
 
     /**
      * Options.
      * @var CoOption
      */
-    private $options;
-
-    /**
-     * cURL handles those have not been dispatched.
-     * @var array
-     */
-    private $queue = [];
+    protected $options;
 
     /**
      * cURL handles those have been already dispatched.
      * @var array
      */
-    private $added = [];
+    protected $added = [];
 
     /**
      * Deferreds.
      * @var Deferred
      */
-    private $deferreds = [];
-
-    /**
-     * TCP connection counter.
-     * @var ConnectionCounter
-     */
-    private $counter;
+    protected $deferreds = [];
 
     /**
      * Constructor.
@@ -48,64 +36,26 @@ class Scheduler
      * @param CoOption $options
      * @param resource $mh      curl_multi
      */
-    public function __construct(CoOption $options, $mh)
-    {
-        $this->mh = $mh;
-        $this->options = $options;
-        $this->counter = new ConnectionCounter($options);
-    }
+    abstract public function __construct(CoOption $options, $mh);
 
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
      * @param Deferred $deferred
      */
-    public function add($ch, Deferred $deferred = null)
-    {
-        $this->counter->isPoolFilled($ch)
-            ? $this->addReserved($ch, $deferred)
-            : $this->addImmediate($ch, $deferred);
-    }
+    abstract public function add($ch, Deferred $deferred = null);
 
     /**
      * Are there no cURL handles?
      * @return bool
      */
-    public function isEmpty()
-    {
-        return !$this->added && !$this->queue;
-    }
+    abstract public function isEmpty();
 
     /**
-     * Call curl_multi_add_handle().
-     * @param resource $ch
-     * @param Deferred $deferred
+     * Do somthing with consumed handle.
+     * @param array $entry
      */
-    private function addImmediate($ch, Deferred $deferred = null)
-    {
-        $errno = curl_multi_add_handle($this->mh, $ch);
-        if ($errno !== CURLM_OK) {
-            // @codeCoverageIgnoreStart
-            $msg = curl_multi_strerror($errno) . ": $ch";
-            $deferred && $deferred->reject(new \RuntimeException($msg));
-            return;
-            // @codeCoverageIgnoreEnd
-        }
-        $this->added[(string)$ch] = $ch;
-        $this->counter->addDestination($ch);
-        $deferred && $this->deferreds[(string)$ch] = $deferred;
-    }
-
-    /**
-     * Push into queue.
-     * @param resource $ch
-     * @param Deferred $deferred
-     */
-    private function addReserved($ch, Deferred $deferred = null)
-    {
-        $this->queue[(string)$ch] = $ch;
-        $deferred && $this->deferreds[(string)$ch] = $deferred;
-    }
+    abstract protected function interruptConsume(array $entry);
 
     /**
      * Poll completed cURL entries, consume cURL queue and resolve them.
@@ -116,8 +66,7 @@ class Scheduler
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
-            $this->counter->removeDestination($entry['handle']);
-            $this->queue && $this->add(array_shift($this->queue));
+            $this->interruptConsume($entry);
         }
         $this->resolveEntries($entries);
     }
@@ -126,7 +75,7 @@ class Scheduler
      * Poll completed cURL entries.
      * @return array
      */
-    private function readCompletedEntries()
+    protected function readCompletedEntries()
     {
         $entries = [];
         // DO NOT call curl_multi_add_handle() until polling done
@@ -140,7 +89,7 @@ class Scheduler
      * Resolve polled cURLs.
      * @param  array $entries Polled cURL entries.
      */
-    private function resolveEntries(array $entries)
+    protected function resolveEntries(array $entries)
     {
         foreach ($entries as $entry) {
             if (!isset($this->deferreds[(string)$entry['handle']])) {
