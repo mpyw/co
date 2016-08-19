@@ -7,7 +7,7 @@ require_once __DIR__ . '/DummyCurlFunctions.php';
 use mpyw\Co\Co;
 use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\CoOption;
-use mpyw\Co\Internal\CURLPool;
+use mpyw\Co\Internal\Pool;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 use AspectMock\Test as test;
@@ -16,7 +16,7 @@ use mpyw\RuntimePromise\Deferred;
 /**
  * @requires PHP 7.0
  */
-class CURLPoolTest extends \Codeception\TestCase\Test {
+class PoolTest extends \Codeception\TestCase\Test {
     use \Codeception\Specify;
     private static $pool;
 
@@ -34,7 +34,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
 
     public function testWait()
     {
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $a = new Deferred;
         $curls = [
             new DummyCurl('E', 5),        // 0===1===2===3===4===5                  (0, 5)
@@ -94,7 +94,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
 
     public function testWaitCurlAndDelay()
     {
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $pool->addOrEnqueue(new DummyCurl('A', 10), $a = new Deferred);
         $pool->addDelay(1.3, $b = new Deferred);
         $pool->addDelay(1.1, $c = new Deferred);
@@ -123,21 +123,21 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
 
     public function testInvalidDelayType()
     {
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $this->setExpectedException(\InvalidArgumentException::class);
         $pool->addDelay([], new Deferred);
     }
 
     public function testInvalidDelayDomain()
     {
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $this->setExpectedException(\DomainException::class);
         $pool->addDelay(-1, new Deferred);
     }
 
     public function testCurlWithoutDeferred()
     {
-        $pool = new CURLPool(new CoOption);
+        $pool = new Pool(new CoOption);
         $pool->addOrEnqueue(new DummyCurl('valid', 1));
         $pool->addOrEnqueue(new DummyCurl('invalid', 1, true));
         $pool->wait();
@@ -147,7 +147,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
 
     public function testUnlimitedConcurrency()
     {
-        $pool = new CURLPool(new CoOption(['concurrency' => 0]));
+        $pool = new Pool(new CoOption(['concurrency' => 0]));
         $a = new Deferred;
         $curls = [];
         foreach (range(1, 100) as $i) {
@@ -193,7 +193,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
                 return $ch;
             }, range(1, 100)),
         ];
-        $pool = new CURLPool(new CoOption(['concurrency' => 3]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $done = [];
         foreach ($groups as $destination => $group) {
             foreach ($group as $key => $ch) {
@@ -239,7 +239,7 @@ class CURLPoolTest extends \Codeception\TestCase\Test {
                 return $ch;
             }, range(1, 1)),
         ];
-        $pool = new CURLPool(new CoOption(['concurrency' => 1, 'group' => false]));
+        $pool = new Pool(new CoOption(['concurrency' => 1, 'group' => false]));
         $done = [];
         foreach ($groups as $destination => $group) {
             foreach ($group as $key => $ch) {

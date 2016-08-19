@@ -4,7 +4,7 @@ namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use mpyw\RuntimePromise\Deferred;
 
-class CURLPool
+class Pool
 {
     /**
      * Options.

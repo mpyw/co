@@ -4,7 +4,7 @@ namespace mpyw\Co;
 use mpyw\Co\Internal\Utils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
-use mpyw\Co\Internal\CURLPool;
+use mpyw\Co\Internal\Pool;
 
 use mpyw\RuntimePromise\Deferred;
 use mpyw\RuntimePromise\PromiseInterface;
@@ -25,7 +25,7 @@ class Co implements CoInterface
 
     /**
      * cURL request pool object.
-     * @var CURLPool
+     * @var Pool
      */
     private $pool;
 
@@ -68,7 +68,7 @@ class Co implements CoInterface
             }
             self::$self = new self;
             self::$self->options = new CoOption($options);
-            self::$self->pool = new CURLPool(self::$self->options);
+            self::$self->pool = new Pool(self::$self->options);
             return self::$self->start($value);
         } finally {
             self::$self = null;

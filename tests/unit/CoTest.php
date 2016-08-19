@@ -8,7 +8,7 @@ use mpyw\Co\Co;
 use mpyw\Co\CoInterface;
 use mpyw\Co\CURLException;
 use mpyw\Co\Internal\CoOption;
-use mpyw\Co\Internal\CURLPool;
+use mpyw\Co\Internal\Pool;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 use AspectMock\Test as test;
