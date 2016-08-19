@@ -1,6 +1,14 @@
 mpyw/co - changelog
 ===================
 
+1.5.0 (2016-08-19)
+------------------
+
+INCOMPATIBLE CHANGES!!
+
+- Removed CURLOPT_PRIVATE based grouping
++ Use builtin scheduler on PHP 7.0.7 or later
+
 1.4.1 (2016-08-18)
 ------------------
 
