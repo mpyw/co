@@ -95,6 +95,7 @@ class Pool
 
     /**
      * Used for halting loop.
+     * @param \RuntimeException $e
      */
     public function reserveHaltException($e)
     {
