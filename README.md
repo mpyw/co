@@ -129,11 +129,14 @@ static Co::wait(mixed $value, array $options = []) : mixed
 | Key | Default | Description |
 |:---:|:---:|:---|
 | `throw` | **`true`** | Whether to throw or capture `CURLException` or `RuntimeException` on top-level.|
-| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />libcurl 7.16.0+ is required. |
-| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />PHP build configuration `--with-nghttp2`, libcurl 7.43.0+ are required. |
-| `group` | **`true`** | Whether to group cURL handles by `CURLOPT_PRIVATE`.<br />The detail of this feature is described below.|
+| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />**At most 5** requests for the same destination are bundled in single TCP connection.|
+| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />**All** requests for the same destination are bundled in single TCP connection.|
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
-| `concurrency` | **`6`** | cURL execution pool size. `0` means unlimited.<br />The value should be within `10` at most.|
+| `concurrency` | **`6`** | Limit of concurrent TCP connections. `0` means unlimited.<br />The value should be within `10` at most. |
+
+- HTTP/1.1 pipelining can be used only if the TCP connection is already established and verified that uses keep-alive session. It means that **the first bundle of HTTP/1.1 requests CANNOT be pipelined**. You can use it from second `yield` in `Co::wait()` call.
+- To use HTTP/2 multiplexing, you have to build PHP with libcurl 7.43.0+ and `--with-nghttp2`.
+- `concurrency` controlling with `pipeline` / `multiplex` CANNOT be correctly driven in **PHP 7.0.6 or before**. You should set higher `concurrency` if you use pipelining or multiplexing in those versions.
 
 #### Return Value
 
@@ -178,8 +181,8 @@ static Co::async(mixed $value, mixed $throw = null) : null
 Overrides/gets static default settings.
 
 ```php
-static Co::setDefaultOptions(array<string, mixed>) : null
-static Co::getDefaultOptions() : array<string, mixed>
+static Co::setDefaultOptions(array $options) : null
+static Co::getDefaultOptions() : array
 ```
 
 ## Rules
@@ -213,14 +216,14 @@ This is equivalent to:
 
 ```php
 $results = yield [
-    function () {
+    function () use ($ch1) {
         try {
             return yield $ch1;
         } catch (\RuntimeException $e) {
             return $e;
         }
     },
-    function () {
+    function () use ($ch2) {
         try {
             return yield $ch2;
         } catch (\RuntimeException $e) {
@@ -243,14 +246,14 @@ This is equivalent to:
 
 ```php
 $results = Co::wait([
-    function () {
+    function () use ($ch1) {
         try {
             return yield $ch1;
         } catch (\RuntimeException $e) {
             return $e;
         }
     },
-    function () {
+    function () use ($ch2) {
         try {
             return yield $ch2;
         } catch (\RuntimeException $e) {
@@ -288,7 +291,7 @@ yield Co::SLEEP => $seconds  # Alias
 
 #### `return` statements
 
-PHP7.0+:
+PHP 7.0+:
 
 ```php
 yield $foo;
@@ -296,7 +299,7 @@ yield $bar;
 return $baz;
 ```
 
-PHP5.5~5.6:
+PHP 5.5~5.6:
 
 ```php
 yield $foo;
@@ -309,55 +312,16 @@ Although experimental aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,
 
 #### `yield` statements with assignment
 
-PHP7.0+:
+PHP 7.0+:
 
 ```php
 $a = yield $foo;
 echo yield $bar;
 ```
 
-PHP5.5~5.6:
+PHP 5.5~5.6:
 
 ```php
 $a = (yield $foo);
 echo (yield $bar);
-```
-
-### Optimizing concurrency by grouping same destination
-
-Note that HTTP/1.1 pipelining or HTTP/2 multiplexing actually uses only **1 TCP connection** for **the same destination**.  
-You don't have to increase `concurrency` if the number of destination hosts is low.  
-
-However, Co cannot read `CURLOPT_URL`. This is the limitation from PHP implemention.  
-To express that some of their destination are the same, set unique identifier for each group using **`CURLOPT_PRIVATE`**.  
-Typically you can group by `parse_url($url, PHP_URL_HOST)`.
-
-```php
-$urls = [
-    'mpyw/co' => 'https://github.com/mpyw/co',
-    'mpyw/TwistOAuth' => 'https://github.com/mpyw/TwistOAuth',
-    '@mpyw' => 'https://twitter.com/mpyw',
-    '@twitter' => 'https://twitter.com/twitter',
-    '@TwitterJP' => 'https://twitter.com/TwitterJP',
-];
-
-$requests = [];
-$hosts = [];
-foreach ($urls as $title => $url) {
-    $ch = curl_init();
-    $host = parse_url($url, PHP_URL_HOST);
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_PRIVATE => $host,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => 'gzip',
-    ]);
-    $requests[$title] = $ch;
-    $hosts[$host] = true;
-}
-
-$responses = Co::wait($requests, [
-    'pipeline' => true,
-    'concurrency' => count($hosts),
-]);
 ```
