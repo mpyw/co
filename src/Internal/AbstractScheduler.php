@@ -65,7 +65,7 @@ abstract class AbstractScheduler
         foreach ($entries as $entry) {
             curl_multi_remove_handle($this->mh, $entry['handle']);
             unset($this->added[(string)$entry['handle']]);
-            $this->interruptConsume($entry);
+            $this->interruptConsume();
         }
         $this->resolveEntries($entries);
     }
