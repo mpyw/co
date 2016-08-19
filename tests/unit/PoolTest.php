@@ -61,7 +61,7 @@ class PoolTest extends \Codeception\TestCase\Test {
                     $this->assertTrue(false);
                 }
             );
-            $pool->addOrEnqueue($ch, $dfd);
+            $pool->addCurl($ch, $dfd);
         }
         foreach ($invalids as $ch) {
             $dfd = new Deferred();
@@ -73,7 +73,7 @@ class PoolTest extends \Codeception\TestCase\Test {
                     $failed[] = $e;
                 }
             );
-            $pool->addOrEnqueue($ch, $dfd);
+            $pool->addCurl($ch, $dfd);
         }
         $pool->wait();
         $failed = array_map(function (\RuntimeException $e) {
@@ -95,7 +95,7 @@ class PoolTest extends \Codeception\TestCase\Test {
     public function testWaitCurlAndDelay()
     {
         $pool = new Pool(new CoOption(['concurrency' => 3]));
-        $pool->addOrEnqueue(new DummyCurl('A', 10), $a = new Deferred);
+        $pool->addCurl(new DummyCurl('A', 10), $a = new Deferred);
         $pool->addDelay(1.3, $b = new Deferred);
         $pool->addDelay(1.1, $c = new Deferred);
         $pool->addDelay(1.2, $d = new Deferred);
@@ -138,8 +138,8 @@ class PoolTest extends \Codeception\TestCase\Test {
     public function testCurlWithoutDeferred()
     {
         $pool = new Pool(new CoOption);
-        $pool->addOrEnqueue(new DummyCurl('valid', 1));
-        $pool->addOrEnqueue(new DummyCurl('invalid', 1, true));
+        $pool->addCurl(new DummyCurl('valid', 1));
+        $pool->addCurl(new DummyCurl('invalid', 1, true));
         $pool->wait();
         $this->assertTrue(true);
     }
@@ -164,7 +164,7 @@ class PoolTest extends \Codeception\TestCase\Test {
                     $this->assertTrue(false);
                 }
             );
-            $pool->addOrEnqueue($ch, $dfd);
+            $pool->addCurl($ch, $dfd);
         }
         $pool->wait();
         foreach ($curls as $curl) {
@@ -206,7 +206,7 @@ class PoolTest extends \Codeception\TestCase\Test {
                         $this->assertTrue(false);
                     }
                 );
-                $pool->addOrEnqueue($ch, $dfd);
+                $pool->addCurl($ch, $dfd);
             }
         }
         $pool->wait();
@@ -252,7 +252,7 @@ class PoolTest extends \Codeception\TestCase\Test {
                         $this->assertTrue(false);
                     }
                 );
-                $pool->addOrEnqueue($ch, $dfd);
+                $pool->addCurl($ch, $dfd);
             }
         }
         $pool->wait();

@@ -279,7 +279,7 @@ class Co implements CoInterface
             }
             // Add or enqueue cURL handles
             if (Utils::isCurl($yieldable['value'])) {
-                $this->pool->addOrEnqueue($yieldable['value'], $dfd);
+                $this->pool->addCurl($yieldable['value'], $dfd);
                 continue;
             }
             // Process generators

@@ -63,7 +63,7 @@ class Delayer
     /**
      * Consume delay queue.
      */
-    public function consumeAndResolve()
+    public function consume()
     {
         foreach ($this->untils as $id => $until) {
             $diff = $until - microtime(true);
