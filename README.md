@@ -1,4 +1,4 @@
-# Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/mpyw/co/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/mpyw/co/?branch=master)
+f# Co [![Build Status](https://travis-ci.org/mpyw/co.svg?branch=master)](https://travis-ci.org/mpyw/co) [![Coverage Status](https://coveralls.io/repos/github/mpyw/co/badge.svg?branch=master)](https://coveralls.io/github/mpyw/co?branch=master) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/mpyw/co/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/mpyw/co/?branch=master)
 
 Asynchronous cURL executor simply based on resource and Generator
 
@@ -129,8 +129,8 @@ static Co::wait(mixed $value, array $options = []) : mixed
 | Key | Default | Description |
 |:---:|:---:|:---|
 | `throw` | **`true`** | Whether to throw or capture `CURLException` or `RuntimeException` on top-level.|
-| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />**At most 5** requests for the same destination are bundled in single TCP connection.|
-| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />**All** requests for the same destination are bundled in single TCP connection.|
+| `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />**At most 5** requests for the same destination are bundled into single TCP connection.|
+| `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />**All** requests for the same destination are bundled into single TCP connection.|
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
 | `concurrency` | **`6`** | Limit of concurrent TCP connections. `0` means unlimited.<br />The value should be within `10` at most. |
 
