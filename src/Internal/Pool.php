@@ -26,7 +26,7 @@ class Pool
 
     /**
      * cURL handle scheduler.
-     * @var Scheduler
+     * @var AbstractScheduler
      */
     private $scheduler;
 
