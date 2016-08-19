@@ -55,5 +55,5 @@ class AutoScheduler extends AbstractScheduler
      * Do nothing.
      * @param array $entry
      */
-    protected function interruptConsume(array $entry) {}
+    protected function interruptConsume() {}
 }

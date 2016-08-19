@@ -47,7 +47,9 @@ class Pool
         $flags = (int)$options['pipeline'] + (int)$options['multiplex'] * 2;
         curl_multi_setopt($this->mh, CURLMOPT_PIPELINING, $flags);
         $this->options = $options;
-        $this->scheduler = new ManualScheduler($options, $this->mh);
+        $this->scheduler = defined('CURLMOPT_MAX_TOTAL_CONNECTIONS')
+            ? new AutoScheduler($options, $this->mh)
+            : new ManualScheduler($options, $this->mh);
         $this->delayer = new Delayer;
     }
 

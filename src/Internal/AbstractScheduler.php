@@ -55,7 +55,7 @@ abstract class AbstractScheduler
      * Do somthing with consumed handle.
      * @param array $entry
      */
-    abstract protected function interruptConsume(array $entry);
+    abstract protected function interruptConsume();
 
     /**
      * Poll completed cURL entries, consume cURL queue and resolve them.

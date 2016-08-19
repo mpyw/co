@@ -2,6 +2,14 @@
 
 namespace mpyw\Co\Internal;
 
+function defined($name) {
+    foreach (debug_backtrace() as $trace) {
+        if (isset($trace['class']) && $trace['class'] === 'ManualPoolTest') {
+            return false;
+        }
+    }
+    return \defined($name);
+}
 function curl_errno(\DummyCurl $ch) {
     return $ch->errno();
 }

@@ -14,9 +14,9 @@ use AspectMock\Test as test;
 use mpyw\RuntimePromise\Deferred;
 
 /**
- * @requires PHP 7.0
+ * @requires PHP 7.0.7
  */
-class PoolTest extends \Codeception\TestCase\Test {
+class ManualPoolTest extends \Codeception\TestCase\Test {
     use \Codeception\Specify;
     private static $pool;
 
@@ -34,13 +34,23 @@ class PoolTest extends \Codeception\TestCase\Test {
 
     public function testWait()
     {
-        $pool = new Pool(new CoOption(['concurrency' => 0]));
+        $pool = new Pool(new CoOption(['concurrency' => 3]));
         $a = new Deferred;
-        $curls = [];
-        foreach (range(1, 100) as $i) {
-            $curls[] = new DummyCurl($i, 2);
-        }
+        $curls = [
+            new DummyCurl('E', 5),        // 0===1===2===3===4===5                  (0, 5)
+            new DummyCurl('A', 1),        // 0===1                                  (0, 1)
+            new DummyCurl('D', 4),        // 0===1===2===3===4                      (0, 4)
+            new DummyCurl('C', 3),        // 0---1---2===3===4===5                  (2, 5)
+            new DummyCurl('B', 2),        // 0---1---2---3---4---5===6===7          (5, 7)
+        ];
+        $invalids = [
+            new DummyCurl('X', 3, true),  // 0---1---2---3---4---5---6===7===8===9  (6, 9)
+            new DummyCurl('Y', 2, true),  // 0---1---2---3---4---5---6===7===8      (6, 8)
+        ];
+        $curl_timings = [[0, 5], [0, 1], [0, 4], [2, 5], [5, 7]];
+        $invalid_timings = [[6, 9], [6, 8]];
         $done = [];
+        $failed = [];
         foreach ($curls as $ch) {
             $dfd = new Deferred();
             $dfd->promise()->then(
@@ -53,11 +63,32 @@ class PoolTest extends \Codeception\TestCase\Test {
             );
             $pool->addCurl($ch, $dfd);
         }
+        foreach ($invalids as $ch) {
+            $dfd = new Deferred();
+            $dfd->promise()->then(
+                function () {
+                    $this->assertTrue(false);
+                },
+                function ($e) use (&$failed) {
+                    $failed[] = $e;
+                }
+            );
+            $pool->addCurl($ch, $dfd);
+        }
         $pool->wait();
-        foreach ($curls as $curl) {
+        $failed = array_map(function (\RuntimeException $e) {
+            $e->getHandle(); // Just for coverage
+            return $e->getMessage();
+        }, $failed);
+        foreach ($curls as $i => $curl) {
             $str = str_replace('DummyCurl', 'Response', (string)$curl);
             $this->assertContains($str, $done);
-            $this->assertEquals([0, 2], [$curl->startedAt(), $curl->stoppedAt()]);
+            $this->assertEquals($curl_timings[$i], [$curl->startedAt(), $curl->stoppedAt()]);
+        }
+        foreach ($invalids as $i => $curl) {
+            $str = str_replace('DummyCurl', 'Error', (string)$curl);
+            $this->assertContains($str, $failed);
+            $this->assertEquals($invalid_timings[$i], [$curl->startedAt(), $curl->stoppedAt()]);
         }
     }
 

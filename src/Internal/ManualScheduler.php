@@ -13,12 +13,6 @@ class ManualScheduler extends AbstractScheduler
     private $queue = [];
 
     /**
-     * TCP connection counter.
-     * @var ConnectionCounter
-     */
-    private $counter;
-
-    /**
      * Constructor.
      * Initialize cURL multi handle.
      * @param CoOption $options
@@ -28,7 +22,6 @@ class ManualScheduler extends AbstractScheduler
     {
         $this->mh = $mh;
         $this->options = $options;
-        $this->counter = new ConnectionCounter($options);
     }
 
     /**
@@ -38,7 +31,8 @@ class ManualScheduler extends AbstractScheduler
      */
     public function add($ch, Deferred $deferred = null)
     {
-        $this->counter->isPoolFilled($ch)
+        $this->options['concurrency'] > 0
+        && count($this->added) >= $this->options['concurrency']
             ? $this->addReserved($ch, $deferred)
             : $this->addImmediate($ch, $deferred);
     }
@@ -68,7 +62,6 @@ class ManualScheduler extends AbstractScheduler
             // @codeCoverageIgnoreEnd
         }
         $this->added[(string)$ch] = $ch;
-        $this->counter->addDestination($ch);
         $deferred && $this->deferreds[(string)$ch] = $deferred;
     }
 
@@ -85,13 +78,11 @@ class ManualScheduler extends AbstractScheduler
 
     /**
      * Add cURL handles from waiting queue.
-     * @param array $entry
      */
-    protected function interruptConsume(array $entry)
+    protected function interruptConsume()
     {
-        $this->counter->removeDestination($entry['handle']);
         if ($this->queue) {
-            $this->add(array_shift($this->queue));
+            $this->addImmediate(array_shift($this->queue));
         }
     }
 }
