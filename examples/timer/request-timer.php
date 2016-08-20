@@ -6,7 +6,6 @@ use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
 Co::wait(function () {
-    $stop = false;
     yield [timer($stop), main($stop)];
 });
 
