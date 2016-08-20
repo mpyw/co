@@ -99,7 +99,7 @@ class Pool
      * Used for halting loop.
      * @param \RuntimeException $e
      */
-    public function reserveHaltException($e)
+    public function reserveHaltException(\RuntimeException $e)
     {
         $this->haltException = $e;
     }

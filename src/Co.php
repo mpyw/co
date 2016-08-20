@@ -245,7 +245,7 @@ class Co implements CoInterface
      * @param  array    $yieldables
      * @param  callable $next
      */
-    private static function getApplier($yielded, $yieldables, callable $next)
+    private static function getApplier($yielded, array $yieldables, callable $next)
     {
         return function (array $results) use ($yielded, $yieldables, $next) {
             foreach ($results as $hash => $resolved) {
@@ -266,7 +266,7 @@ class Co implements CoInterface
      * @param  bool  $throw_acceptable
      * @return PromiseInterface
      */
-    private function promiseAll($yieldables, $throw_acceptable)
+    private function promiseAll(array $yieldables, $throw_acceptable)
     {
         $promises = [];
         foreach ($yieldables as $yieldable) {
