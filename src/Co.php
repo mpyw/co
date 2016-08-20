@@ -275,7 +275,7 @@ class Co implements CoInterface
             // If caller cannot accept exception,
             // we handle rejected value as resolved.
             if (!$throw_acceptable) {
-                $dfd = self::deferredSafe($dfd);
+                $dfd = self::safeDeferred($dfd);
             }
             // Add or enqueue cURL handles
             if (Utils::isCurl($yieldable['value'])) {
@@ -296,7 +296,7 @@ class Co implements CoInterface
      * @param  Deferred $original_dfd
      * @return Deferred
      */
-    private static function deferredSafe($original_dfd)
+    private static function safeDeferred(Deferred $original_dfd)
     {
         $dfd = new Deferred;
         $absorber = function ($any) use ($original_dfd) {
