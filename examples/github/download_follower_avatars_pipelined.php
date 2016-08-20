@@ -5,7 +5,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-function curl_init_with($url, array $options = [])
+function curl_init_with(string $url, array $options = [])
 {
     $ch = curl_init();
     $options = array_replace([
@@ -20,7 +20,7 @@ function curl_init_with($url, array $options = [])
     return $ch;
 }
 
-function get_github_followers_async($username, $page, &$has_more)
+function get_github_followers_async(string $username, int $page, &$has_more) : \Generator
 {
     $dom = new DOMDocument;
     $html = yield curl_init_with("https://github.com/$username/followers?page=$page");
@@ -36,7 +36,7 @@ function get_github_followers_async($username, $page, &$has_more)
     return $sources;
 }
 
-function download_image_async($url, $basename, $savedir = '/tmp')
+function download_image_async(string $url, string $basename, string $savedir = '/tmp') : \Generator
 {
     static $exts = [
         'image/jpeg' => '.jpg',

@@ -5,7 +5,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
 
-function curl_init_with($url, array $options = [])
+function curl_init_with(string $url, array $options = [])
 {
     $ch = curl_init();
     $options = array_replace([
@@ -16,7 +16,7 @@ function curl_init_with($url, array $options = [])
     return $ch;
 }
 
-function get_xpath_async($url)
+function get_xpath_async(string $url) : \Generator
 {
     $dom = new \DOMDocument;
     @$dom->loadHTML(yield curl_init_with($url));

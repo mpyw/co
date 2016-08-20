@@ -10,7 +10,7 @@ Co::wait(function () {
     yield [timer($stop), main($stop)];
 });
 
-function curl_init_with($url, array $options = [])
+function curl_init_with(string $url, array $options = [])
 {
     $ch = curl_init();
     $options = array_replace([

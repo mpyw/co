@@ -9,7 +9,7 @@ set_time_limit(0);
  * @param  array  $q
  * @return resource
  */
-function curl($path, array $q = [])
+function curl(string $path, array $q = [])
 {
     $ch = curl_init();
     curl_setopt_array($ch, [
@@ -28,7 +28,7 @@ function curl($path, array $q = [])
  * @param  array    $q
  * @return resource
  */
-function curl_streaming($path, callable $callback, array $q = [])
+function curl_streaming(string $path, callable $callback, array $q = [])
 {
     $ch = curl_init();
     curl_setopt_array($ch, [

@@ -12,7 +12,7 @@ serve();
  * @param  string $data
  * @throws \RuntimeException
  */
-function fsend($con, $data)
+function fsend($con, string $data)
 {
     if (!@fwrite($con, $data)) {
         $error = error_get_last();
@@ -27,7 +27,7 @@ function fsend($con, $data)
  * @param  string   $message
  * @param  string   $content
  */
-function respond_rest($con, $status, $message, $content)
+function respond_rest($con, int $status, string $message, string $content)
 {
     try {
         $length = strlen($content);
@@ -44,11 +44,11 @@ function respond_rest($con, $status, $message, $content)
 /**
  * Respond to the Streaming endpoints.
  * @param  resource $con
- * @param  int      $status
- * @param  string   $message
- * @param  string   $content
+ * @param  callable $tick_function
+ * @param  int      $tick
+ * @param  Int      $times
  */
-function respond_streaming($con, $tick_function, $tick, $times)
+function respond_streaming($con, callable $tick_function, int $tick, int $times)
 {
     try {
         fsend($con, "HTTP/1.1 200 OK\r\n");
@@ -132,7 +132,7 @@ function serve()
     }
 }
 
-function signal_handler($sig)
+function signal_handler(int $sig)
 {
     if ($sig !== SIGCHLD) {
         return;
