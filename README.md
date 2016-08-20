@@ -9,7 +9,7 @@ Asynchronous cURL executor simply based on resource and Generator
 | ~5.4 | :boom: | Incompatible |
 
 ```php
-function curl_init_with($url, array $options = [])
+function curl_init_with(string $url, array $options = [])
 {
     $ch = curl_init();
     $options = array_replace([
@@ -19,7 +19,7 @@ function curl_init_with($url, array $options = [])
     curl_setopt_array($ch, $options);
     return $ch;
 }
-function get_xpath_async($url)
+function get_xpath_async(string $url) : \Generator
 {
     $dom = new \DOMDocument;
     @$dom->loadHTML(yield curl_init_with($url));
