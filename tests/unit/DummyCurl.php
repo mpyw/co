@@ -56,37 +56,37 @@ class DummyCurl
         $this->stoppedAt = -1;
     }
 
-    public function __toString()
+    public function __toString() : string
     {
         return $this->identifier;
     }
 
-    public function getContent()
+    public function getContent() : string
     {
         return $this->response;
     }
 
-    public function errno()
+    public function errno() : int
     {
         return $this->errno;
     }
 
-    public function errstr()
+    public function errstr() : string
     {
         return $this->errstr;
     }
 
-    public function prepared()
+    public function prepared() : bool
     {
         return $this->counter === $this->cost;
     }
 
-    public function running()
+    public function running() : bool
     {
         return $this->counter > 0 && $this->counter < $this->cost;
     }
 
-    public function done()
+    public function done() : bool
     {
         return $this->counter === 0;
     }
@@ -109,17 +109,17 @@ class DummyCurl
         $this->read = true;
     }
 
-    public function alreadyRead()
+    public function alreadyRead() : bool
     {
         return $this->read;
     }
 
-    public function startedAt()
+    public function startedAt() : int
     {
         return $this->startedAt;
     }
 
-    public function stoppedAt()
+    public function stoppedAt() : int
     {
         return $this->stoppedAt;
     }
