@@ -16,4 +16,6 @@ interface CoInterface
     public static function getDefaultOptions();
     public static function wait($value, array $options = []);
     public static function async($value, $throw = null);
+    public static function race($value);
+    public static function any($value);
 }
