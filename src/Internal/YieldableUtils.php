@@ -1,9 +1,10 @@
 <?php
 
 namespace mpyw\Co\Internal;
+use mpyw\RuntimePromise\Deferred;
 
-class Utils {
-
+class YieldableUtils
+{
     /**
      * Recursively normalize value.
      *   Generator Closure  -> GeneratorContainer
@@ -15,7 +16,7 @@ class Utils {
      */
     public static function normalize($value, $yield_key = null)
     {
-        if (self::isGeneratorClosure($value)) {
+        if (TypeUtils::isGeneratorClosure($value)) {
             $value = $value();
         }
         if ($value instanceof \Generator) {
@@ -45,7 +46,7 @@ class Utils {
     {
         $r = [];
         if (!is_array($value)) {
-            if (self::isCurl($value) || self::isGeneratorContainer($value)) {
+            if (TypeUtils::isCurl($value) || TypeUtils::isGeneratorContainer($value)) {
                 if (isset($runners[(string)$value])) {
                     throw new \DomainException('Duplicated cURL resource or Generator instance found.');
                 }
@@ -64,34 +65,39 @@ class Utils {
     }
 
     /**
-     * Check if value is a valid cURL handle.
-     * @param  mixed $value
-     * @return bool
+     * Return function that apply changes in yieldables.
+     * @param  mixed         $yielded
+     * @param  array         $yieldables
+     * @param  callable|null $next
+     * @return mixed
      */
-    public static function isCurl($value)
+    public static function getApplier($yielded, array $yieldables, callable $next = null)
     {
-        return is_resource($value) && get_resource_type($value) === 'curl';
+        return function (array $results) use ($yielded, $yieldables, $next) {
+            foreach ($results as $hash => $resolved) {
+                $current = &$yielded;
+                foreach ($yieldables[$hash]['keylist'] as $key) {
+                    $current = &$current[$key];
+                }
+                $current = $resolved;
+                unset($current);
+            }
+            return $next ? $next($yielded) : $yielded;
+        };
     }
 
     /**
-     * Check if value is a valid Generator.
-     * @param  mixed $value
-     * @return bool
+     * Return Deferred that absorbs rejects.
+     * @param  Deferred $original_dfd
+     * @return Deferred
      */
-    public static function isGeneratorContainer($value)
+    public static function safeDeferred(Deferred $original_dfd)
     {
-        return $value instanceof GeneratorContainer;
+        $dfd = new Deferred;
+        $absorber = function ($any) use ($original_dfd) {
+            $original_dfd->resolve($any);
+        };
+        $dfd->promise()->then($absorber, $absorber);
+        return $dfd;
     }
-
-    /**
-     * Check if value is a valid Generator closure.
-     * @param  mixed $value
-     * @return bool
-     */
-    public static function isGeneratorClosure($value)
-    {
-        return $value instanceof \Closure
-            && (new \ReflectionFunction($value))->isGenerator();
-    }
-
 }

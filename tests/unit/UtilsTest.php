@@ -2,7 +2,8 @@
 
 use mpyw\Co\CoInterface;
 use mpyw\Co\Internal\GeneratorContainer;
-use mpyw\Co\Internal\Utils;
+use mpyw\Co\Internal\YieldableUtils;
+use mpyw\Co\Internal\TypeUtils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
@@ -25,12 +26,12 @@ class UtilsTest extends \Codeception\TestCase\Test {
     public function testIsCurl()
     {
         $ch = curl_init();
-        $this->assertTrue(Utils::isCurl($ch));
+        $this->assertTrue(TypeUtils::isCurl($ch));
         curl_close($ch);
-        $this->assertFalse(Utils::isCurl($ch));
-        $this->assertFalse(Utils::isCurl(curl_multi_init()));
-        $this->assertFalse(Utils::isCurl([1]));
-        $this->assertFalse(Utils::isCurl((object)[1]));
+        $this->assertFalse(TypeUtils::isCurl($ch));
+        $this->assertFalse(TypeUtils::isCurl(curl_multi_init()));
+        $this->assertFalse(TypeUtils::isCurl([1]));
+        $this->assertFalse(TypeUtils::isCurl((object)[1]));
     }
 
     public function testIsGeneratorContainer()
@@ -39,8 +40,8 @@ class UtilsTest extends \Codeception\TestCase\Test {
             yield 1;
         })();
         $con = new GeneratorContainer($gen);
-        $this->assertTrue(Utils::isGeneratorContainer($con));
-        $this->assertFalse(Utils::isGeneratorContainer($gen));
+        $this->assertTrue(TypeUtils::isGeneratorContainer($con));
+        $this->assertFalse(TypeUtils::isGeneratorContainer($gen));
     }
 
     public function testBasicNormalize()
@@ -64,28 +65,28 @@ class UtilsTest extends \Codeception\TestCase\Test {
             ];
         };
 
-        $gen1 = Utils::normalize($genfunc, $options);
+        $gen1 = YieldableUtils::normalize($genfunc, $options);
         $this->assertInstanceOf(GeneratorContainer::class, $gen1);
         $this->assertInstanceOf(\Closure::class, $gen1->current());
 
-        $gen2 = Utils::normalize($gen1->current(), $options);
+        $gen2 = YieldableUtils::normalize($gen1->current(), $options);
         $this->assertInstanceOf(GeneratorContainer::class, $gen2);
         $this->assertInstanceOf(\Closure::class, $gen2->current());
 
-        $gen3 = Utils::normalize($gen2->current(), $options);
+        $gen3 = YieldableUtils::normalize($gen2->current(), $options);
         $this->assertInstanceOf(GeneratorContainer::class, $gen3);
         $this->assertEquals(3, $gen3->current());
 
         $gen3->send('A');
         $this->assertFalse($gen3->valid());
         $this->assertFalse($gen3->thrown());
-        $r1 = Utils::normalize($gen3->getReturnOrThrown(), $options);
+        $r1 = YieldableUtils::normalize($gen3->getReturnOrThrown(), $options);
         $this->assertEquals(4, $r1);
 
         $gen2->send(4);
         $this->assertFalse($gen2->valid());
         $this->assertFalse($gen2->thrown());
-        $r2 = Utils::normalize($gen2->getReturnOrThrown(), $options);
+        $r2 = YieldableUtils::normalize($gen2->getReturnOrThrown(), $options);
         $this->assertEquals([1, 2, 4], $r2);
 
         $gen1->send('B');
@@ -94,7 +95,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $gen1->send('C');
         $this->assertFalse($gen1->valid());
         $this->assertFalse($gen1->thrown());
-        $r3 = Utils::normalize($gen1->getReturnOrThrown(), $options);
+        $r3 = YieldableUtils::normalize($gen1->getReturnOrThrown(), $options);
         $this->assertInstanceOf(GeneratorContainer::class, $r3[0]);
         $this->assertEquals('C', $r3[1]);
 
@@ -104,7 +105,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
         $gen4->send('D');
         $this->assertFalse($gen4->valid());
         $this->assertFalse($gen4->thrown());
-        $r4 = Utils::normalize($gen4->getReturnOrThrown(), $options);
+        $r4 = YieldableUtils::normalize($gen4->getReturnOrThrown(), $options);
         $this->assertEquals('D', $r4);
     }
 
@@ -122,13 +123,13 @@ class UtilsTest extends \Codeception\TestCase\Test {
             yield null;
         };
 
-        $gen1 = Utils::normalize($genfunc);
+        $gen1 = YieldableUtils::normalize($genfunc);
         $this->assertInstanceOf(GeneratorContainer::class, $gen1);
         $this->assertTrue($gen1->valid());
         $this->assertEquals(CoInterface::SAFE, $gen1->key());
         $this->assertInstanceOf(\Closure::class, $gen1->current());
 
-        $gen2 = Utils::normalize($gen1->current(), $gen1->key());
+        $gen2 = YieldableUtils::normalize($gen1->current(), $gen1->key());
         $this->assertInstanceOf(GeneratorContainer::class, $gen2);
         $this->assertFalse($gen2->valid());
         $this->assertTrue($gen2->thrown());
@@ -139,7 +140,7 @@ class UtilsTest extends \Codeception\TestCase\Test {
             : $gen1->throw_($gen2->getReturnOrThrown());
         $this->assertTrue($gen1->valid());
 
-        $gen3 = Utils::normalize($gen1->current(), $gen1->key());
+        $gen3 = YieldableUtils::normalize($gen1->current(), $gen1->key());
         $this->assertInstanceOf(GeneratorContainer::class, $gen3);
         $this->assertFalse($gen3->valid());
         $this->assertTrue($gen3->thrown());
@@ -177,12 +178,12 @@ class UtilsTest extends \Codeception\TestCase\Test {
                 'value' => $z2,
                 'keylist' => ['x', 'y2', 'z2'],
             ],
-        ], Utils::getYieldables($r));
+        ], YieldableUtils::getYieldables($r));
     }
 
     public function testTwoTypesOfFunctions()
     {
-        $v = Utils::normalize([
+        $v = YieldableUtils::normalize([
             function () { return 1; },
             function () { return yield 1; },
         ], new CoOption);

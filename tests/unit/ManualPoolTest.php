@@ -22,7 +22,7 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
 
     public function _before()
     {
-        test::double('mpyw\Co\Internal\Utils', ['isCurl' => function ($arg) {
+        test::double('mpyw\Co\Internal\TypeUtils', ['isCurl' => function ($arg) {
             return $arg instanceof \DummyCurl;
         }]);
     }

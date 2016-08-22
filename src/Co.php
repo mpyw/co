@@ -1,7 +1,8 @@
 <?php
 
 namespace mpyw\Co;
-use mpyw\Co\Internal\Utils;
+use mpyw\Co\Internal\TypeUtils;
+use mpyw\Co\Internal\YieldableUtils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
@@ -116,7 +117,7 @@ class Co implements CoInterface
         $deferred = new Deferred;
         $return = null;
         // For convenience, all values are wrapped into generator
-        $con = Utils::normalize($this->getRootGenerator($throw, $value, $return));
+        $con = YieldableUtils::normalize($this->getRootGenerator($throw, $value, $return));
         // We have to provide deferred object only if $wait
         $this->processGeneratorContainerRunning($con, $deferred);
         // We have to wait $return only if $wait
@@ -152,15 +153,15 @@ class Co implements CoInterface
         }
 
         // Now we normalize returned value
-        $returned = Utils::normalize($gc->getReturnOrThrown(), $gc->getYieldKey());
-        $yieldables = Utils::getYieldables($returned, [], $this->runners);
+        $returned = YieldableUtils::normalize($gc->getReturnOrThrown(), $gc->getYieldKey());
+        $yieldables = YieldableUtils::getYieldables($returned, [], $this->runners);
 
         // If normalized value contains yieldables, we have to chain resolver
         if ($yieldables) {
             $this
             ->promiseAll($yieldables, true)
             ->then(
-                self::getApplier($returned, $yieldables, [$deferred, 'resolve']),
+                YieldableUtils::getApplier($returned, $yieldables, [$deferred, 'resolve']),
                 [$deferred, 'reject']
             )
             ->always(function () use ($yieldables) {
@@ -196,8 +197,8 @@ class Co implements CoInterface
         }
 
         // Now we normalize yielded value
-        $yielded = Utils::normalize($gc->current());
-        $yieldables = Utils::getYieldables($yielded, [], $this->runners);
+        $yielded = YieldableUtils::normalize($gc->current());
+        $yieldables = YieldableUtils::getYieldables($yielded, [], $this->runners);
         if (!$yieldables) {
             // If there are no yieldables, send yielded value back into generator
             $gc->send($yielded);
@@ -210,7 +211,7 @@ class Co implements CoInterface
         $this
         ->promiseAll($yieldables, $gc->key() !== CoInterface::SAFE)
         ->then(
-            self::getApplier($yielded, $yieldables, [$gc, 'send']),
+            YieldableUtils::getApplier($yielded, $yieldables, [$gc, 'send']),
             [$gc, 'throw_']
         )->always(function () use ($gc, $deferred, $yieldables) {
             // Continue
@@ -240,27 +241,6 @@ class Co implements CoInterface
     }
 
     /**
-     * Return function that apply changes in yieldables.
-     * @param  mixed    $yielded
-     * @param  array    $yieldables
-     * @param  callable $next
-     */
-    private static function getApplier($yielded, array $yieldables, callable $next)
-    {
-        return function (array $results) use ($yielded, $yieldables, $next) {
-            foreach ($results as $hash => $resolved) {
-                $current = &$yielded;
-                foreach ($yieldables[$hash]['keylist'] as $key) {
-                    $current = &$current[$key];
-                }
-                $current = $resolved;
-                unset($current);
-            }
-            $next($yielded);
-        };
-    }
-
-    /**
      * Promise all changes in yieldables are prepared.
      * @param  array $yieldables
      * @param  bool  $throw_acceptable
@@ -275,15 +255,15 @@ class Co implements CoInterface
             // If caller cannot accept exception,
             // we handle rejected value as resolved.
             if (!$throw_acceptable) {
-                $dfd = self::safeDeferred($dfd);
+                $dfd = YieldableUtils::safeDeferred($dfd);
             }
             // Add or enqueue cURL handles
-            if (Utils::isCurl($yieldable['value'])) {
+            if (TypeUtils::isCurl($yieldable['value'])) {
                 $this->pool->addCurl($yieldable['value'], $dfd);
                 continue;
             }
             // Process generators
-            if (Utils::isGeneratorContainer($yieldable['value'])) {
+            if (TypeUtils::isGeneratorContainer($yieldable['value'])) {
                 $this->processGeneratorContainer($yieldable['value'], $dfd);
                 continue;
             }
@@ -292,17 +272,7 @@ class Co implements CoInterface
     }
 
     /**
-     * Return Deferred that absorbs rejects.
-     * @param  Deferred $original_dfd
-     * @return Deferred
      */
-    private static function safeDeferred(Deferred $original_dfd)
     {
-        $dfd = new Deferred;
-        $absorber = function ($any) use ($original_dfd) {
-            $original_dfd->resolve($any);
-        };
-        $dfd->promise()->then($absorber, $absorber);
-        return $dfd;
     }
 }
