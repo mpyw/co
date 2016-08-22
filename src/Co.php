@@ -2,11 +2,11 @@
 
 namespace mpyw\Co;
 use mpyw\Co\Internal\TypeUtils;
+use mpyw\Co\Internal\ControlUtils;
 use mpyw\Co\Internal\YieldableUtils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
-
 use mpyw\RuntimePromise\Deferred;
 use mpyw\RuntimePromise\PromiseInterface;
 
@@ -272,7 +272,57 @@ class Co implements CoInterface
     }
 
     /**
+     * Wrap value with the Generator that returns the first successful result.
+     * If all yieldables failed, AllFailedException is thrown.
+     * If no yieldables found, AllFailedException is thrown.
+     *
+     * @param  mixed $value
+     * @return \Generator Resolved value.
+     * @throws AllFailedException
      */
+    public static function any($value)
     {
+        yield Co::RETURN_WITH => (yield ControlUtils::anyOrRace(
+            $value,
+            ['\mpyw\Co\Internal\ControlUtils', 'reverse'],
+            'Co::any() failed.'
+        ));
+        // @codeCoverageIgnoreStart
     }
+    // @codeCoverageIgnoreEnd
+
+    /**
+     * Wrap value with the Generator that returns the first result.
+     * If no yieldables found, AllFailedException is thrown.
+     *
+     * @param  mixed $value
+     * @return \Generator Resolved value.
+     * @throws \RuntimeException|AllFailedException
+     */
+    public static function race($value)
+    {
+        yield Co::RETURN_WITH => (yield ControlUtils::anyOrRace(
+            $value,
+            ['\mpyw\Co\Internal\ControlUtils', 'fail'],
+            'Co::race() failed.'
+        ));
+        // @codeCoverageIgnoreStart
+    }
+    // @codeCoverageIgnoreEnd
+
+    /**
+     * Wrap value with the Generator that returns the all results.
+     * Normally you don't have to use this method, just yield an array that contains yieldables.
+     * You should use only with Co::race() or Co::any().
+     *
+     * @param  mixed $value
+     * @return \Generator Resolved value.
+     * @throws \RuntimeException
+     */
+    public static function all($value)
+    {
+        yield Co::RETURN_WITH => (yield $value);
+        // @codeCoverageIgnoreStart
+    }
+    // @codeCoverageIgnoreEnd
 }
