@@ -105,4 +105,13 @@ class ControlTest extends \Codeception\TestCase\Test {
             $this->assertEquals(['A', 'B'], $e->getReasons());
         }
     }
+
+    public function testAll()
+    {
+        $a = new DummyCurl('A', 3);
+        $b = new DummyCurl('B', 2);
+        $r = Co::wait(Co::all([$a, $b]));
+        $this->assertEquals('Response[A]', $r[0]);
+        $this->assertEquals('Response[B]', $r[1]);
+    }
 }

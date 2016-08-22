@@ -311,4 +311,20 @@ class Co implements CoInterface
         // @codeCoverageIgnoreStart
     }
     // @codeCoverageIgnoreEnd
+
+    /**
+     * Wrap value with the Generator that returns the all results.
+     * Normally you don't have to use this method, just yield an array that contains yieldables.
+     * You should use only with Co::race() or Co::any().
+     *
+     * @param  mixed $value
+     * @return mixed Resolved value.
+     * @throws \RuntimeException
+     */
+    public static function all($value)
+    {
+        yield Co::RETURN_WITH => (yield $value);
+        // @codeCoverageIgnoreStart
+    }
+    // @codeCoverageIgnoreEnd
 }
