@@ -7,8 +7,6 @@ use mpyw\Co\Internal\YieldableUtils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
-use mpyw\Co\Internal\ControlException;
-
 use mpyw\RuntimePromise\Deferred;
 use mpyw\RuntimePromise\PromiseInterface;
 
@@ -279,7 +277,7 @@ class Co implements CoInterface
      * If no yieldables found, AllFailedException is thrown.
      *
      * @param  mixed $value
-     * @return mixed Resolved value.
+     * @return \Generator Resolved value.
      * @throws AllFailedException
      */
     public static function any($value)
@@ -298,7 +296,7 @@ class Co implements CoInterface
      * If no yieldables found, AllFailedException is thrown.
      *
      * @param  mixed $value
-     * @return mixed Resolved value.
+     * @return \Generator Resolved value.
      * @throws \RuntimeException|AllFailedException
      */
     public static function race($value)
@@ -318,7 +316,7 @@ class Co implements CoInterface
      * You should use only with Co::race() or Co::any().
      *
      * @param  mixed $value
-     * @return mixed Resolved value.
+     * @return \Generator Resolved value.
      * @throws \RuntimeException
      */
     public static function all($value)
