@@ -4,10 +4,6 @@ namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use mpyw\RuntimePromise\Deferred;
 
-/**
- * Currently this class is not used
- * @codeCoverageIgnore
- */
 class AutoScheduler extends AbstractScheduler
 {
     /**
