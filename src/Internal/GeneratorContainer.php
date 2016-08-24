@@ -19,7 +19,7 @@ class GeneratorContainer
 
     /**
      * Thrown exception.
-     * @var \RuntimeException
+     * @var \Throwable|\RuntimeException
      */
     private $e;
 
@@ -152,7 +152,7 @@ class GeneratorContainer
 
     /**
      * Validate that generator has finished running.
-     * @throws LogicException
+     * @throws \BadMethodCallException
      */
     private function validateValidity()
     {
@@ -163,7 +163,7 @@ class GeneratorContainer
 
     /**
      * Validate that generator is still running.
-     * @throws LogicException
+     * @throws \BadMethodCallException
      */
     private function validateInvalidity()
     {

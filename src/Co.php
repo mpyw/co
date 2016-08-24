@@ -8,7 +8,7 @@ use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
 use React\Promise\Deferred;
-use React\Promise\PromiseInterface;
+use React\Promise\Promise;
 use React\Promise\FulfilledPromise;
 use React\Promise\RejectedPromise;
 
@@ -131,7 +131,7 @@ class Co implements CoInterface
     /**
      * Handle resolving generators.
      * @param  GeneratorContainer $gc
-     * @return PromiseInterface
+     * @return Promise
      */
     private function processGeneratorContainer(GeneratorContainer $gc)
     {
@@ -143,7 +143,7 @@ class Co implements CoInterface
     /**
      * Handle resolving generators already done.
      * @param  GeneratorContainer $gc
-     * @return PromiseInterface
+     * @return Promise
      */
     private function processGeneratorContainerDone(GeneratorContainer $gc)
     {
@@ -177,7 +177,7 @@ class Co implements CoInterface
     /**
      * Handle resolving generators still running.
      * @param  GeneratorContainer $gc
-     * @return PromiseInterface
+     * @return Promise
      */
     private function processGeneratorContainerRunning(GeneratorContainer $gc)
     {
@@ -236,7 +236,7 @@ class Co implements CoInterface
      * Promise all changes in yieldables are prepared.
      * @param  array $yieldables
      * @param  bool  $throw_acceptable
-     * @return PromiseInterface
+     * @return Promise
      */
     private function promiseAll(array $yieldables, $throw_acceptable)
     {

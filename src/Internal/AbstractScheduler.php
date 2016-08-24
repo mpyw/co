@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
-use React\Promise\PromiseInterface;
+use React\Promise\Promise;
 
 abstract class AbstractScheduler
 {
@@ -41,7 +41,7 @@ abstract class AbstractScheduler
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @return PromiseInterface
+     * @return Promise
      */
     abstract public function add($ch);
 

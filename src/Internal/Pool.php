@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
-use React\Promise\PromiseInterface;
+use React\Promise\Promise;
 
 class Pool
 {
@@ -54,7 +54,7 @@ class Pool
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @return PromiseInterface
+     * @return Promise
      */
     public function addCurl($ch)
     {
@@ -64,7 +64,7 @@ class Pool
     /**
      * Add delay.
      * @param int $time
-     * @return PromiseInterface
+     * @return Promise
      */
     public function addDelay($time)
     {
