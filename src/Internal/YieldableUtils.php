@@ -1,7 +1,7 @@
 <?php
 
 namespace mpyw\Co\Internal;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class YieldableUtils
 {
@@ -91,7 +91,7 @@ class YieldableUtils
      * @param  Promise $promise
      * @return Promise
      */
-    public static function safePromise(Promise $promise)
+    public static function safePromise(PromiseInterface $promise)
     {
         return $promise->then(null, function ($value) {
             if (TypeUtils::isFatalThrowable($value)) {

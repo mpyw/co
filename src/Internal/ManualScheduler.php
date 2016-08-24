@@ -3,7 +3,7 @@
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use React\Promise\Deferred;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class ManualScheduler extends AbstractScheduler
 {
@@ -28,7 +28,7 @@ class ManualScheduler extends AbstractScheduler
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @return Promise
+     * @return PromiseInterface
      */
     public function add($ch)
     {

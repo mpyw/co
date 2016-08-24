@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use React\Promise\Deferred;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class Delayer
 {
@@ -21,7 +21,7 @@ class Delayer
     /**
      * Add delay.
      * @param int $time
-     * @return Promise
+     * @return PromiseInterface
      */
     public function add($time)
     {
