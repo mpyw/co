@@ -1,7 +1,6 @@
 <?php
 
 namespace mpyw\Co\Internal;
-use React\Promise\Deferred;
 use mpyw\Co\AllFailedException;
 use mpyw\Co\CoInterface;
 
