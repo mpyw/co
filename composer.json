@@ -23,12 +23,13 @@
     },
     "require": {
         "php": ">=5.5.0",
-        "lib-curl": ">=7.2.0",
+        "lib-curl": ">=7.20.0",
         "ext-Reflection": "*",
         "mpyw/runtime-promise": "^1.0"
     },
     "require-dev": {
         "php": ">=7.0.0",
+        "lib-curl": ">=7.43.0",
         "codeception/aspect-mock": "^2.0",
         "codeception/codeception": "^2.2",
         "codeception/specify": "*",
