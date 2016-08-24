@@ -25,6 +25,9 @@ class CoTest extends \Codeception\TestCase\Test {
         test::double('mpyw\Co\Internal\TypeUtils', ['isCurl' => function ($arg) {
             return $arg instanceof \DummyCurl;
         }]);
+        if (!defined('CURLMOPT_MAX_TOTAL_CONNECTIONS')) {
+            define('CURLMOPT_MAX_TOTAL_CONNECTIONS', 13);
+        }
     }
 
     public function _after()
