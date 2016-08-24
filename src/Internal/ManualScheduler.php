@@ -3,6 +3,7 @@
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 class ManualScheduler extends AbstractScheduler
 {
@@ -27,14 +28,16 @@ class ManualScheduler extends AbstractScheduler
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @param Deferred $deferred
+     * @return PromiseInterface
      */
-    public function add($ch, Deferred $deferred = null)
+    public function add($ch)
     {
+        $deferred = new Deferred;
         $this->options['concurrency'] > 0
         && count($this->added) >= $this->options['concurrency']
             ? $this->addReserved($ch, $deferred)
             : $this->addImmediate($ch, $deferred);
+        return $deferred->promise();
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
-use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 abstract class AbstractScheduler
 {
@@ -26,7 +26,7 @@ abstract class AbstractScheduler
 
     /**
      * Deferreds.
-     * @var Deferred
+     * @var array
      */
     protected $deferreds = [];
 
@@ -41,9 +41,9 @@ abstract class AbstractScheduler
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @param Deferred $deferred
+     * @return PromiseInterface
      */
-    abstract public function add($ch, Deferred $deferred = null);
+    abstract public function add($ch);
 
     /**
      * Are there no cURL handles?

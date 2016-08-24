@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
-use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 class Pool
 {
@@ -54,21 +54,21 @@ class Pool
     /**
      * Call curl_multi_add_handle() or push into queue.
      * @param resource $ch
-     * @param Deferred $deferred
+     * @return PromiseInterface
      */
-    public function addCurl($ch, Deferred $deferred = null)
+    public function addCurl($ch)
     {
-        $this->scheduler->add($ch, $deferred);
+        return $this->scheduler->add($ch);
     }
 
     /**
      * Add delay.
-     * @param int      $time
-     * @param Deferred $deferred
+     * @param int $time
+     * @return PromiseInterface
      */
-    public function addDelay($time, Deferred $deferred)
+    public function addDelay($time)
     {
-        $this->delayer->add($time, $deferred);
+        return $this->delayer->add($time);
     }
 
     /**

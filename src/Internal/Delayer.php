@@ -2,6 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 class Delayer
 {
@@ -13,17 +14,18 @@ class Delayer
 
     /**
      * Deferreds.
-     * @var Deferred
+     * @var array
      */
     private $deferreds = [];
 
     /**
      * Add delay.
-     * @param int      $time
-     * @param Deferred $deferred
+     * @param int $time
+     * @return PromiseInterface
      */
-    public function add($time, Deferred $deferred)
+    public function add($time)
     {
+        $deferred = new Deferred;
         $time = filter_var($time, FILTER_VALIDATE_FLOAT);
         if ($time === false) {
             throw new \InvalidArgumentException('Delay must be number.');
@@ -36,6 +38,7 @@ class Delayer
         } while (isset($this->untils[$id]));
         $this->untils[$id] = microtime(true) + $time;
         $this->deferreds[$id] = $deferred;
+        return $deferred->promise();
     }
 
     /**

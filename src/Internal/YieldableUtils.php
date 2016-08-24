@@ -1,7 +1,7 @@
 <?php
 
 namespace mpyw\Co\Internal;
-use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 class YieldableUtils
 {
@@ -87,22 +87,17 @@ class YieldableUtils
     }
 
     /**
-     * Return Deferred that absorbs rejects, excluding fatal Throwable.
-     * @param  Deferred $original_dfd
-     * @return Deferred
+     * Return Promise that absorbs rejects, excluding fatal Throwable.
+     * @param  Promise $promise
+     * @return Promise
      */
-    public static function safeDeferred(Deferred $original_dfd)
+    public static function safePromise(PromiseInterface $promise)
     {
-        $dfd = new Deferred;
-        $resolver = function ($any) use ($original_dfd) {
-            $original_dfd->resolve($any);
-        };
-        $rejector = function ($any) use ($original_dfd) {
-            TypeUtils::isFatalThrowable($value)
-            ? $original_dfd->reject($any)
-            : $original_dfd->resolve($any);
-        };
-        $dfd->promise()->then($resolver, $rejector);
-        return $dfd;
+        return $promise->then(null, function ($value) {
+            if (TypeUtils::isFatalThrowable($value)) {
+                throw $value;
+            }
+            return $value;
+        });
     }
 }

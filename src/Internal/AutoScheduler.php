@@ -3,6 +3,7 @@
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
 use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 /**
  * Currently unused because of issue #24
@@ -28,20 +29,22 @@ class AutoScheduler extends AbstractScheduler
     /**
      * Call curl_multi_add_handle().
      * @param resource $ch
-     * @param Deferred $deferred
+     * @return PromiseInterface
      */
-    public function add($ch, Deferred $deferred = null)
+    public function add($ch)
     {
+        $deferred = new Deferred;
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
             // @codeCoverageIgnoreStart
             $msg = curl_multi_strerror($errno) . ": $ch";
-            $deferred && $deferred->reject(new \RuntimeException($msg));
-            return;
+            $deferred->reject(new \RuntimeException($msg));
+            return $deferred->promise();
             // @codeCoverageIgnoreEnd
         }
         $this->added[(string)$ch] = $ch;
-        $deferred && $this->deferreds[(string)$ch] = $deferred;
+        $this->deferreds[(string)$ch] = $deferred;
+        return $deferred->promise();
     }
 
     /**
