@@ -1,6 +1,13 @@
 mpyw/co - changelog
 ===================
 
+1.5.2 (2016-08-25)
+------------------
+
++ Use react/promise instead of mpyw/runtime-promise
++ Refactored Deferred-based flows into Promise-based ones
++ Non-Runtime Throwables with yield statement can be captured everywhere explicitly using try-catch blocks
+
 1.5.1 (2016-08-25)
 ------------------
 
