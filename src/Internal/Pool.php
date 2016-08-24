@@ -20,7 +20,7 @@ class Pool
 
     /**
      * Used for halting loop.
-     * @var \RuntimeException
+     * @var \Throwable|\RuntimeException
      */
     private $haltException;
 
@@ -95,9 +95,9 @@ class Pool
 
     /**
      * Used for halting loop.
-     * @param \RuntimeException $e
+     * @param \Throwable|\RuntimeException $e
      */
-    public function reserveHaltException(\RuntimeException $e)
+    public function reserveHaltException($e)
     {
         $this->haltException = $e;
     }

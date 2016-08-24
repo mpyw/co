@@ -87,17 +87,22 @@ class YieldableUtils
     }
 
     /**
-     * Return Deferred that absorbs rejects.
+     * Return Deferred that absorbs rejects, excluding fatal Throwable.
      * @param  Deferred $original_dfd
      * @return Deferred
      */
     public static function safeDeferred(Deferred $original_dfd)
     {
         $dfd = new Deferred;
-        $absorber = function ($any) use ($original_dfd) {
+        $resolver = function ($any) use ($original_dfd) {
             $original_dfd->resolve($any);
         };
-        $dfd->promise()->then($absorber, $absorber);
+        $rejector = function ($any) use ($original_dfd) {
+            TypeUtils::isFatalThrowable($value)
+            ? $original_dfd->reject($any)
+            : $original_dfd->resolve($any);
+        };
+        $dfd->promise()->then($resolver, $rejector);
         return $dfd;
     }
 }

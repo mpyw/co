@@ -34,4 +34,15 @@ class TypeUtils
         return $value instanceof \Closure
             && (new \ReflectionFunction($value))->isGenerator();
     }
+
+    /**
+     * Check if value is Throwable, excluding RuntimeException.
+     * @param  mixed $value
+     * @return bool
+     */
+    public static function isFatalThrowable($value)
+    {
+        return !$value instanceof \RuntimeException
+            && ($value instanceof \Throwable || $value instanceof \Exception);
+    }
 }

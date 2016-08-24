@@ -68,10 +68,9 @@ class GeneratorContainer
         try {
             $this->g->current();
             return $this->e === null && $this->g->valid() && $this->g->key() !== CoInterface::RETURN_WITH;
-        } catch (\RuntimeException $e) {
-            $this->e = $e;
-            return false;
-        }
+        } catch (\Throwable $e) {} catch (\Exception $e) {}
+        $this->e = $e;
+        return false;
     }
 
     /**
@@ -105,29 +104,29 @@ class GeneratorContainer
         $this->validateValidity();
         try {
             $this->g->send($value);
-        } catch (\RuntimeException $e) {
-            $this->e = $e;
-        }
+            return;
+        } catch (\Throwable $e) {} catch (\Exception $e) {}
+        $this->e = $e;
     }
 
     /**
      * Throw exception into generator.
-     * @param \RuntimeException $e
+     * @param \Throwable|\RuntimeException $e
      * @NOTE: This method returns nothing,
      *        while original generator returns something.
      */
-    public function throw_(\RuntimeException $e)
+    public function throw_($e)
     {
         $this->validateValidity();
         try {
             $this->g->throw($e);
-        } catch (\RuntimeException $e) {
-            $this->e = $e;
-        }
+            return;
+        } catch (\Throwable $e) {} catch (\Exception $e) {}
+        $this->e = $e;
     }
 
     /**
-     * Return whether exception is thrown.
+     * Return whether Throwable is thrown.
      * @return bool
      */
     public function thrown()
