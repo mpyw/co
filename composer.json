@@ -25,7 +25,7 @@
         "php": ">=5.5.0",
         "lib-curl": ">=7.20.0",
         "ext-Reflection": "*",
-        "mpyw/runtime-promise": "^1.0"
+        "react/promise": "^2.4"
     },
     "require-dev": {
         "php": ">=7.0.0",

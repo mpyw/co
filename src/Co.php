@@ -7,8 +7,8 @@ use mpyw\Co\Internal\YieldableUtils;
 use mpyw\Co\Internal\CoOption;
 use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
-use mpyw\RuntimePromise\Deferred;
-use mpyw\RuntimePromise\PromiseInterface;
+use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
 
 class Co implements CoInterface
 {
@@ -268,7 +268,7 @@ class Co implements CoInterface
                 continue;
             }
         }
-        return \mpyw\RuntimePromise\all($promises);
+        return \React\Promise\all($promises);
     }
 
     /**

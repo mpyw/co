@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use mpyw\Co\CURLException;
-use mpyw\RuntimePromise\Deferred;
+use React\Promise\Deferred;
 
 abstract class AbstractScheduler
 {

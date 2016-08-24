@@ -11,7 +11,7 @@ use mpyw\Co\Internal\Pool;
 use mpyw\Privator\Proxy;
 use mpyw\Privator\ProxyException;
 use AspectMock\Test as test;
-use mpyw\RuntimePromise\Deferred;
+use React\Promise\Deferred;
 
 /**
  * @requires PHP 7.0.7
