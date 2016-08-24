@@ -9,6 +9,7 @@ use mpyw\Co\Internal\GeneratorContainer;
 use mpyw\Co\Internal\Pool;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
+use React\Promise\ExtendedPromiseInterface;
 use React\Promise\FulfilledPromise;
 use React\Promise\RejectedPromise;
 
@@ -119,8 +120,11 @@ class Co implements CoInterface
         $return = null;
         // For convenience, all values are wrapped into generator
         $con = YieldableUtils::normalize($this->getRootGenerator($throw, $value, $return));
-        // We have to provide deferred object only if $wait
-        $this->processGeneratorContainerRunning($con)->done();
+        $promise = $this->processGeneratorContainerRunning($con);
+        if ($promise instanceof ExtendedPromiseInterface) {
+            // This is actually 100% true; just used for unwrapping Exception thrown.
+            $promise->done();
+        }
         // We have to wait $return only if $wait
         if ($wait) {
             $this->pool->wait();

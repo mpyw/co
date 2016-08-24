@@ -88,8 +88,8 @@ class YieldableUtils
 
     /**
      * Return Promise that absorbs rejects, excluding fatal Throwable.
-     * @param  Promise $promise
-     * @return Promise
+     * @param  PromiseInterface $promise
+     * @return PromiseInterface
      */
     public static function safePromise(PromiseInterface $promise)
     {
