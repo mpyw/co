@@ -20,7 +20,7 @@ class Pool
 
     /**
      * Used for halting loop.
-     * @var \Throwable|\RuntimeException
+     * @var \Throwable|\Exception
      */
     private $haltException;
 

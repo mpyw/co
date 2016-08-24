@@ -19,7 +19,7 @@ class GeneratorContainer
 
     /**
      * Thrown exception.
-     * @var \RuntimeException
+     * @var \Throwable|\Exception
      */
     private $e;
 
@@ -111,7 +111,7 @@ class GeneratorContainer
 
     /**
      * Throw exception into generator.
-     * @param \Throwable|\RuntimeException $e
+     * @param \Throwable|\Exception $e
      * @NOTE: This method returns nothing,
      *        while original generator returns something.
      */
@@ -152,7 +152,7 @@ class GeneratorContainer
 
     /**
      * Validate that generator has finished running.
-     * @throws LogicException
+     * @throws \BadMethodCallException
      */
     private function validateValidity()
     {
@@ -163,7 +163,7 @@ class GeneratorContainer
 
     /**
      * Validate that generator is still running.
-     * @throws LogicException
+     * @throws \BadMethodCallException
      */
     private function validateInvalidity()
     {
