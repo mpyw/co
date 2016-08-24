@@ -226,6 +226,16 @@ class CoTest extends \Codeception\TestCase\Test {
 
     public function testLogicExceptionHandling()
     {
+        Co::wait(function () {
+            try {
+                yield function () {
+                    yield;
+                    throw new \LogicException;
+                };
+            } catch (\LogicException $e) {
+                $this->assertTrue(true);
+            }
+        }, ['throw' => false]);
         $this->setExpectedException(\LogicException::class);
         Co::wait(function () {
             yield function () {
