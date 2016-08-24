@@ -164,10 +164,8 @@ class Co implements CoInterface
                 YieldableUtils::getApplier($returned, $yieldables, [$deferred, 'resolve']),
                 [$deferred, 'reject']
             )
-            ->then(function () use ($yieldables) {
+            ->then(function () use ($yieldables, $deferred) {
                 $this->runners = array_diff_key($this->runners, $yieldables);
-            })
-            ->then(function () use ($deferred) {
                 return $deferred->promise();
             });
         }

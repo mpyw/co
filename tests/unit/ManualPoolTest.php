@@ -52,8 +52,7 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
         $done = [];
         $failed = [];
         foreach ($curls as $ch) {
-            $dfd = new Deferred();
-            $dfd->promise()->then(
+            $pool->addCurl($ch)->then(
                 function ($result) use (&$done) {
                     $done[] = $result;
                 },
@@ -61,11 +60,9 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
                     $this->assertTrue(false);
                 }
             );
-            $pool->addCurl($ch, $dfd);
         }
         foreach ($invalids as $ch) {
-            $dfd = new Deferred();
-            $dfd->promise()->then(
+            $pool->addCurl($ch)->then(
                 function () {
                     $this->assertTrue(false);
                 },
@@ -73,7 +70,6 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
                     $failed[] = $e;
                 }
             );
-            $pool->addCurl($ch, $dfd);
         }
         $pool->wait();
         $failed = array_map(function (\RuntimeException $e) {
@@ -95,20 +91,16 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
     public function testWaitCurlAndDelay()
     {
         $pool = new Pool(new CoOption(['concurrency' => 3]));
-        $pool->addCurl(new DummyCurl('A', 10), $a = new Deferred);
-        $pool->addDelay(1.3, $b = new Deferred);
-        $pool->addDelay(1.1, $c = new Deferred);
-        $pool->addDelay(1.2, $d = new Deferred);
-        $a->promise()->then(function () use (&$x) {
+        $pool->addCurl(new DummyCurl('A', 10))->then(function () use (&$x) {
             $x = microtime(true);
         });
-        $b->promise()->then(function () use (&$y) {
+        $pool->addDelay(1.3)->then(function () use (&$y) {
             $y = microtime(true);
         });
-        $c->promise()->then(function () use (&$z) {
+        $pool->addDelay(1.1)->then(function () use (&$z) {
             $z = microtime(true);
         });
-        $d->promise()->then(function () use (&$w) {
+        $pool->addDelay(1.2)->then(function () use (&$w) {
             $w = microtime(true);
         });
         $pool->wait();
@@ -121,49 +113,23 @@ class ManualPoolTest extends \Codeception\TestCase\Test {
         $this->assertTrue($w < $y);
     }
 
-    public function testInvalidDelayType()
-    {
-        $pool = new Pool(new CoOption(['concurrency' => 3]));
-        $this->setExpectedException(\InvalidArgumentException::class);
-        $pool->addDelay([], new Deferred);
-    }
-
-    public function testInvalidDelayDomain()
-    {
-        $pool = new Pool(new CoOption(['concurrency' => 3]));
-        $this->setExpectedException(\DomainException::class);
-        $pool->addDelay(-1, new Deferred);
-    }
-
-    public function testCurlWithoutDeferred()
-    {
-        $pool = new Pool(new CoOption);
-        $pool->addCurl(new DummyCurl('valid', 1));
-        $pool->addCurl(new DummyCurl('invalid', 1, true));
-        $pool->wait();
-        $this->assertTrue(true);
-    }
-
     public function testUnlimitedConcurrency()
     {
         $pool = new Pool(new CoOption(['concurrency' => 0]));
-        $a = new Deferred;
         $curls = [];
         foreach (range(1, 100) as $i) {
             $curls[] = new DummyCurl($i, 2);
         }
         $done = [];
         foreach ($curls as $ch) {
-            $dfd = new Deferred();
-            $dfd->promise()->then(
+            $pool->addCurl($ch)->then(
                 function ($result) use (&$done) {
                     $done[] = $result;
                 },
                 function () {
                     $this->assertTrue(false);
                 }
-            );
-            $pool->addCurl($ch, $dfd);
+            );;
         }
         $pool->wait();
         foreach ($curls as $curl) {
