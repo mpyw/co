@@ -2,7 +2,7 @@
 
 namespace mpyw\Co\Internal;
 
-class ControlException extends \RuntimeException
+class ControlException extends \Exception
 {
     private $value;
 
