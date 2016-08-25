@@ -2,6 +2,7 @@
 
 namespace mpyw\Co\Internal;
 use React\Promise\PromiseInterface;
+use React\Promise\CancellablePromiseInterface;
 
 class YieldableUtils
 {
@@ -87,17 +88,39 @@ class YieldableUtils
     }
 
     /**
-     * Return Promise that absorbs rejects, excluding fatal Throwable.
-     * @param  PromiseInterface $promise
+     * This function wrap promises for two purposes:
+     *
+     * A. Cancel neighbors when it is rejected with ControlException that has cancel flag.
+     * B. Return Promise that absorbs rejects, excluding fatal Throwable.
+     *    (Note that ControlException is fatal Throwable)
+     *
+     * @param  array $promises
+     * @param  bool  $throw_acceptable Disable B or not.
      * @return PromiseInterface
      */
-    public static function safePromise(PromiseInterface $promise)
+    public static function wrapPromises(array $promises, $throw_acceptable)
     {
-        return $promise->then(null, function ($value) {
-            if (TypeUtils::isFatalThrowable($value)) {
-                throw $value;
+        $control_promise = null;
+        $dispose = function () use ($promises, &$control_promise) {
+            if ($control_promise) {
+                foreach ($promises as $promise) {
+                    if ($promise instanceof CancellablePromiseInterface && $control_promise !== $promise) {
+                        $promise->cancel();
+                    }
+                }
             }
-            return $value;
-        });
+        };
+        $promises = array_map(function (PromiseInterface $promise) use ($promises, $throw_acceptable, &$control_promise) {
+            return $promise->then(null, function ($any) use ($promises, $throw_acceptable, &$control_promise, $promise) {
+                if (TypeUtils::isCancelerControlException($any)) {
+                    $control_promise = $promise;
+                }
+                if ($throw_acceptable || TypeUtils::isFatalThrowable($any)) {
+                    throw $any;
+                }
+                return $any;
+            });
+        }, $promises);
+        return \React\Promise\all($promises)->always($dispose);
     }
 }

@@ -91,6 +91,9 @@ abstract class AbstractScheduler
     protected function resolveEntries(array $entries)
     {
         foreach ($entries as $entry) {
+            if (!isset($this->deferreds[(string)$entry['handle']])) {
+                continue;
+            }
             $deferred = $this->deferreds[(string)$entry['handle']];
             unset($this->deferreds[(string)$entry['handle']]);
             $entry['result'] === CURLE_OK

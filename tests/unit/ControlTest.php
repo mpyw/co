@@ -42,6 +42,15 @@ class ControlTest extends \Codeception\TestCase\Test {
         $this->assertEquals('Response[B]', $r);
     }
 
+    public function testCancellableRaceSuccess()
+    {
+        $r = Co::wait(Co::race([
+            function () { while (true) { yield Co::DELAY => 0.00001; } },
+            new DummyCurl('B', 2),
+        ], true));
+        $this->assertEquals('Response[B]', $r);
+    }
+
     public function testRaceFailure()
     {
         $this->setExpectedException(CURLException::class, 'Error[B]');
@@ -49,6 +58,15 @@ class ControlTest extends \Codeception\TestCase\Test {
             new DummyCurl('A', 3),
             new DummyCurl('B', 2, true),
         ]));
+    }
+
+    public function testCancellableRaceFailure()
+    {
+        $this->setExpectedException(CURLException::class, 'Error[B]');
+        $r = Co::wait(Co::race([
+            function () { while (true) { yield Co::DELAY => 0.00001; } },
+            new DummyCurl('B', 2, true),
+        ], true));
     }
 
     public function testRaceEmpty()
@@ -77,6 +95,15 @@ class ControlTest extends \Codeception\TestCase\Test {
             new DummyCurl('A', 3),
             new DummyCurl('B', 2, true),
         ]));
+        $this->assertEquals('Response[A]', $r);
+    }
+
+    public function testCancellableAnyPartialSuccess()
+    {
+        $r = Co::wait(Co::any([
+            new DummyCurl('A', 3),
+            function () { while (true) { yield Co::DELAY => 5; } },
+        ], true));
         $this->assertEquals('Response[A]', $r);
     }
 

@@ -257,15 +257,7 @@ class Co implements CoInterface
                 continue;
             }
         }
-        // If caller cannot accept exception,
-        // we handle rejected value as resolved.
-        if (!$throw_acceptable) {
-            $promises = array_map(
-                ['\mpyw\Co\Internal\YieldableUtils', 'safePromise'],
-                $promises
-            );
-        }
-        return \React\Promise\all($promises);
+        return YieldableUtils::wrapPromises($promises, $throw_acceptable);
     }
 
     /**
@@ -274,13 +266,15 @@ class Co implements CoInterface
      * If no yieldables found, AllFailedException is thrown.
      *
      * @param  mixed $value
+     * @param  bool  $cancel Cancel uncompleted promises if possible.
      * @return \Generator Resolved value.
      * @throws AllFailedException
      */
-    public static function any($value)
+    public static function any($value, $cancel = false)
     {
         yield Co::RETURN_WITH => (yield ControlUtils::anyOrRace(
             $value,
+            $cancel,
             ['\mpyw\Co\Internal\ControlUtils', 'reverse'],
             'Co::any() failed.'
         ));
@@ -293,13 +287,15 @@ class Co implements CoInterface
      * If no yieldables found, AllFailedException is thrown.
      *
      * @param  mixed $value
+     * @param  bool  $cancel Cancel uncompleted promises if possible.
      * @return \Generator Resolved value.
      * @throws \RuntimeException|AllFailedException
      */
-    public static function race($value)
+    public static function race($value, $cancel = false)
     {
         yield Co::RETURN_WITH => (yield ControlUtils::anyOrRace(
             $value,
+            $cancel,
             ['\mpyw\Co\Internal\ControlUtils', 'fail'],
             'Co::race() failed.'
         ));
