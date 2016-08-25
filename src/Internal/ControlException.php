@@ -8,13 +8,11 @@ class ControlException extends \RuntimeException
 
     /**
      * Constructor.
-     * @param string   $message Dummy.
-     * @param int      $code    Dummy.
      * @param mixed    $value   Value to be retrived.
      */
-    public function __construct($message, $code, $value)
+    public function __construct($value)
     {
-        parent::__construct($message, $code);
+        parent::__construct();
         $this->value = $value;
     }
 

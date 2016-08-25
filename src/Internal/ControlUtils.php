@@ -56,7 +56,7 @@ class ControlUtils
         } catch (\RuntimeException $e) {
             yield CoInterface::RETURN_WITH => $e;
         }
-        throw new ControlException('', 0, $result);
+        throw new ControlException($result);
     }
 
     /**
@@ -66,6 +66,6 @@ class ControlUtils
      */
     public static function fail($yieldable)
     {
-        throw new ControlException('', 0, (yield $yieldable));
+        throw new ControlException(yield $yieldable);
     }
 }
