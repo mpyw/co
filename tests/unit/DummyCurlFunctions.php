@@ -7,6 +7,9 @@ function defined(string $name) : bool {
         if (isset($trace['class']) && $trace['class'] === 'ManualPoolTest') {
             return false;
         }
+        if (isset($trace['class']) && $trace['class'] === 'AutoPoolTest' && $trace['function'] === 'testInvalidOption') {
+            return false;
+        }
     }
     return \defined($name);
 }

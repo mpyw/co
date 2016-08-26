@@ -5,12 +5,6 @@ use mpyw\Co\CURLException;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 
-/**
- * Currently unused because of issue #24
- * https://github.com/mpyw/co/issues/24
- *
- * @codeCoverageIgnore
- */
 class AutoScheduler extends AbstractScheduler
 {
     /**

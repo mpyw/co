@@ -12,6 +12,7 @@ class CoOption implements \ArrayAccess
         'throw' => 'Bool', // Throw CURLExceptions?
         'pipeline' => 'Bool', // Use HTTP/1.1 pipelining?
         'multiplex' => 'Bool', // Use HTTP/2 multiplexing?
+        'autoschedule' => 'Bool', // Use AutoScheduler?
         'interval' => 'NaturalFloat', // curl_multi_select() timeout
         'concurrency' => 'NaturalInt', // Limit of TCP connections
     ];
@@ -24,6 +25,7 @@ class CoOption implements \ArrayAccess
         'throw' => true,
         'pipeline' => false,
         'multiplex' => true,
+        'autoschedule' => false,
         'interval' => 0.002,
         'concurrency' => 6,
     ];
@@ -124,6 +126,9 @@ class CoOption implements \ArrayAccess
         foreach ($options as $key => $value) {
             if (!isset(self::$types[$key])) {
                 throw new \DomainException("Unknown option: $key");
+            }
+            if ($key === 'autoschedule' && !defined('CURLMOPT_MAX_TOTAL_CONNECTIONS')) {
+                throw new \OutOfBoundsException('"autoschedule" can be used only on PHP 7.0.7 or later.');
             }
             $validator = [__CLASS__, 'validate' . self::$types[$key]];
             $options[$key] = $validator($key, $value);
