@@ -131,13 +131,26 @@ static Co::wait(mixed $value, array $options = []) : mixed
 | `throw` | **`true`** | Whether to throw or capture `CURLException` or `RuntimeException` on top-level.|
 | `pipeline` | **`false`** | Whether to use HTTP/1.1 pipelining.<br />**At most 5** requests for the same destination are bundled into single TCP connection.|
 | `multiplex` | **`true`** | Whether to use HTTP/2 multiplexing.<br />**All** requests for the same destination are bundled into single TCP connection.|
+| `autoschedule` | **`false`** | Whether to use automatic scheduling by `CURLMOPT_MAX_TOTAL_CONNECTIONS`.|
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
 | `concurrency` | **`6`** | Limit of concurrent TCP connections. `0` means unlimited.<br />The value should be within `10` at most. |
 
 - `Throwable` those are not extended from `RuntimeException`, such as `Error` `Exception` `LogicException` are not captured. If you need to capture them, you have to write your own try-catch blocks in your functions.
 - HTTP/1.1 pipelining can be used only if the TCP connection is already established and verified that uses keep-alive session. It means that **the first bundle of HTTP/1.1 requests CANNOT be pipelined**. You can use it from second `yield` in `Co::wait()` call.
 - To use HTTP/2 multiplexing, you have to build PHP with libcurl 7.43.0+ and `--with-nghttp2`.
-- `concurrency` controlling with `pipeline` / `multiplex` CANNOT be correctly driven in **PHP 7.0.6 or before**. You should set higher `concurrency` if you use pipelining or multiplexing in those versions.
+- To use `autoschedule`, PHP 7.0.7 or later is required.
+
+**When `autoschedule` Disabled:**
+
+- `curl_multi_add_handle()` call can be delayed.
+- `concurrency` controlling with `pipeline` / `multiplex` CANNOT be correctly driven. You should set higher `concurrency` in those cases.
+
+**When `autoschedule` Enabled:**
+
+- `curl_multi_add_handle()` is always immediately called.
+- `CURLINFO_TOTAL_TIME` CANNOT be correctly calculated. "Total Time" includes the time waiting for the other requests are finished.
+
+The details of `CURLIFNO_*_TIME` timing charts are described at the bottom of this page.
 
 #### Return Value
 
@@ -346,3 +359,60 @@ try {
     // Unreachable
 }
 ```
+
+## Timing Charts
+
+Note that S is equal to Q when `autoschedule` is disabled.
+
+### Basic
+
+| ID | When |
+|:---:|:---|
+| Q | `curl_multi_exec()` immediately after `curl_multi_add_handle()` called |
+| S | Processing started actually |
+| DNS | DNS resolution completed |
+| TCP | TCP connection established |
+| TLS | TLS/SSL session established |
+| HS | All HTTP request headers sent |
+| BS | Whole HTTP request body sent |
+| HR | All HTTP response headers received |
+| BR | Whole HTTP response body received |
+
+| Constant | Time |
+|:---|:---|
+| CURLINFO_NAMELOOKUP_TIME | DNS - S |
+| CURLINFO_CONNECT_TIME | TCP - S |
+| CURLINFO_APPCONNECT_TIME | TLS - S |
+| CURLINFO_PRETRANSFER_TIME | HS - S |
+| CURLINFO_STARTTRANSFER_TIME | HR - S |
+| CURLINFO_TOTAL_TIME | BR - Q |
+
+### With Redirections by `CURLOPT_FOLLOWLOCATION`
+
+| ID | When |
+|:---:|:---|
+| Q | `curl_multi_exec()` immediately after `curl_multi_add_handle()` called |
+| S | Processing started actually |
+| DNS(1) | DNS resolution completed |
+| TCP(1) | TCP connection established |
+| TLS(1) | TLS/SSL session established |
+| HS(1) | All HTTP request headers sent |
+| BS(1) | Whole HTTP request body sent |
+| HR(1) | All HTTP response headers received |
+| DNS(2) | DNS resolution completed |
+| TCP(2) | TCP connection established |
+| TLS(2) | TLS/SSL session established |
+| HS(2) | All HTTP request headers sent |
+| BS(2) | Whole HTTP request body sent |
+| HR(2) | All HTTP response headers received |
+| BR(2) | Whole HTTP response body received |
+
+| Constant | Time |
+|:---|:---|
+| CURLINFO_REDIRECT_TIME | HR(1) - Q |
+| CURLINFO_NAMELOOKUP_TIME | DNS(2) - HR(1) |
+| CURLINFO_CONNECT_TIME | TCP(2) - HR(1) |
+| CURLINFO_APPCONNECT_TIME | TLS(2) - HR(1) |
+| CURLINFO_PRETRANSFER_TIME | HS(2) - HR(1) |
+| CURLINFO_STARTTRANSFER_TIME | HR(2) - HR(1) |
+| CURLINFO_TOTAL_TIME | BR(2) - Q |
