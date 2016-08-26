@@ -25,13 +25,7 @@ class Delayer
      */
     public function add($time)
     {
-        do {
-            $id = uniqid();
-        } while (isset($this->untils[$id]));
-        $deferred = new Deferred(function () use ($id) {
-            unset($this->untils[$id], $this->deferreds[$id]);
-            throw new CanceledException;
-        });
+        $deferred = new Deferred;
         $time = filter_var($time, FILTER_VALIDATE_FLOAT);
         if ($time === false) {
             throw new \InvalidArgumentException('Delay must be number.');
@@ -39,6 +33,9 @@ class Delayer
         if ($time < 0) {
             throw new \DomainException('Delay must be positive.');
         }
+        do {
+            $id = uniqid();
+        } while (isset($this->untils[$id]));
         $this->untils[$id] = microtime(true) + $time;
         $this->deferreds[$id] = $deferred;
         return $deferred->promise();

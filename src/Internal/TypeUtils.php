@@ -45,14 +45,4 @@ class TypeUtils
         return !$value instanceof \RuntimeException
             && ($value instanceof \Throwable || $value instanceof \Exception);
     }
-
-    /**
-     * Check if value is ControlException with canceler flag enabled.
-     * @param  mixed $value
-     * @return bool
-     */
-    public static function isCancelerControlException($value)
-    {
-        return $value instanceof ControlException && $value->isCanceler();
-    }
 }

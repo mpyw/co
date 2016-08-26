@@ -32,10 +32,7 @@ class ManualScheduler extends AbstractScheduler
      */
     public function add($ch)
     {
-        $deferred = new Deferred(function () use ($ch) {
-            unset($this->added[(string)$ch], $this->queue[(string)$ch], $this->deferreds[(string)$ch]);
-            throw new CanceledException;
-        });
+        $deferred = new Deferred;
         $this->options['concurrency'] > 0
         && count($this->added) >= $this->options['concurrency']
             ? $this->addReserved($ch, $deferred)

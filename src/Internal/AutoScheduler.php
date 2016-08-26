@@ -33,10 +33,7 @@ class AutoScheduler extends AbstractScheduler
      */
     public function add($ch)
     {
-        $deferred = new Deferred(function () use ($ch) {
-            unset($this->added[(string)$ch], $this->deferreds[(string)$ch]);
-            throw new CanceledException;
-        });
+        $deferred = new Deferred;
         $errno = curl_multi_add_handle($this->mh, $ch);
         if ($errno !== CURLM_OK) {
             // @codeCoverageIgnoreStart
