@@ -326,3 +326,23 @@ PHP 5.5~5.6:
 $a = (yield $foo);
 echo (yield $bar);
 ```
+
+#### `finally` statements
+
+Be careful that `return` triggers `finally` while `yield Co::RETURN_WITH =>` does not.
+
+```php
+try {
+    return '...';
+} finally {
+    // Reachable
+}
+```
+
+```php
+try {
+    yield Co::RETURN_WITH => '...';
+} finally {
+    // Unreachable
+}
+```
