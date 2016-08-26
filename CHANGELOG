@@ -1,6 +1,12 @@
 mpyw/co - changelog
 ===================
 
+1.5.3 (2016-08-27)
+------------------
+
++ Builtin scheduler revived
++ New option "autoschedule" for enabling builtin scheduler
+
 1.5.2 (2016-08-25)
 ------------------
 
