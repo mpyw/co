@@ -188,7 +188,7 @@ static Co::getDefaultOptions() : array
 
 ## Rules
 
-### Conversion on resolving
+### Conversion on Resolving
 
 The all yielded/returned values are resolved by the following rules.  
 Yielded values are also resent to the Generator.  
@@ -202,7 +202,7 @@ The rules will be applied recursively.
 
 "Generator Closure" means Closure that contains `yield` keywords.
 
-### Exception-safe or Exception-unsafe priority
+### Exception-safe or Exception-unsafe Priority
 
 #### Context in Generator
 
@@ -279,7 +279,7 @@ The following setting overrides parent context as exception-unsafe.
 Co::async($value, true);
 ```
 
-### Pseudo-sleep for each coroutine
+### Pseudo-sleep for Each Coroutine
 
 The following `yield` statements delay the coroutine processing:
 
@@ -290,7 +290,7 @@ yield Co::SLEEP => $seconds  # Alias
 
 ### Comparison with Generators of PHP7.0+ or PHP5.5~5.6
 
-#### `return` statements
+#### `return` Statements
 
 PHP 7.0+:
 
@@ -311,7 +311,7 @@ yield Co::RETURN_WITH => $baz;
 Although experimental aliases `Co::RETURN_` `Co::RET` `Co::RTN` are provided,  
 **`Co::RETURN_WITH`** is recommended in terms of readability.
 
-#### `yield` statements with assignment
+#### `yield` Statements with Assignment
 
 PHP 7.0+:
 
@@ -327,7 +327,7 @@ $a = (yield $foo);
 echo (yield $bar);
 ```
 
-#### `finally` statements
+#### `finally` Statements
 
 Be careful that `return` triggers `finally` while `yield Co::RETURN_WITH =>` does not.
 
