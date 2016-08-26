@@ -148,7 +148,7 @@ static Co::wait(mixed $value, array $options = []) : mixed
 **When `autoschedule` Enabled:**
 
 - `curl_multi_add_handle()` is always immediately called.
-- `CURLINFO_TOTAL_TIME` CANNOT be correctly calculated. "Total Time" includes the time waiting for the other requests are finished.
+- `CURLINFO_TOTAL_TIME` CANNOT be correctly calculated. "Total Time" includes the time waiting for other requests are finished.
 
 The details of `CURLIFNO_*_TIME` timing charts are described at the bottom of this page.
 
