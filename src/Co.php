@@ -104,6 +104,15 @@ class Co implements CoInterface
     }
 
     /**
+     * Return if Co::wait() is running.
+     * @return bool
+     */
+    public static function isRunning()
+    {
+        return (bool)self::$self;
+    }
+
+    /**
      * External instantiation is forbidden.
      */
     private function __construct() {}

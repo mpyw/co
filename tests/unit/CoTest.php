@@ -35,6 +35,22 @@ class CoTest extends \Codeception\TestCase\Test {
         test::clean();
     }
 
+    public function testRunningTrue()
+    {
+        $result = null;
+        Co::wait(function () use (&$result) {
+            yield;
+            $result = Co::isRunning();
+        });
+        $this->assertSame(true, $result);
+    }
+
+    public function testRunningFalse()
+    {
+        $result = Co::isRunning();
+        $this->assertSame(false, $result);
+    }
+
     public function testSetDefaultOptions()
     {
         try {

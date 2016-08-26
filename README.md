@@ -190,6 +190,19 @@ static Co::async(mixed $value, mixed $throw = null) : null
 
 - `CURLException` or `RuntimeException` can be thrown in exception-unsafe context.<br />Note that you **CANNOT** capture top-level exceptions unless you catch **outside of `Co::wait()` call**.
 
+### Co::isRunning()
+
+Return if `Co::wait()` is running().  
+With this check, you can safely call `Co::wait()` or `Co::async()`.
+
+```php
+static Co::isRunning() : bool
+```
+
+#### Return Value
+
+**`(bool)`**<br />`true` if running, otherwise `false`.
+
 ### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
 Overrides/gets static default settings.
