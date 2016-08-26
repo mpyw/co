@@ -3,12 +3,12 @@
 namespace mpyw\Co\Internal;
 
 function defined(string $name) : bool {
+    if (!\defined($name)) {
+        define($name, 114514);
+    }
     foreach (debug_backtrace() as $trace) {
-        if (isset($trace['class']) && $trace['class'] === 'ManualPoolTest') {
-            return false;
-        }
-        if (isset($trace['class']) && $trace['class'] === 'AutoPoolTest' && $trace['function'] === 'testInvalidOption') {
-            return false;
+        if (isset($trace['class']) && $trace['class'] === 'AutoPoolTest') {
+            return $trace['function'] !== 'testInvalidOption';
         }
     }
     return \defined($name);
