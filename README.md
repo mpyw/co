@@ -104,7 +104,7 @@ composer require mpyw/co:^1.5
 And require Composer autoloader in your scripts.
 
 ```php
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 use mpyw\Co\Co;
 use mpyw\Co\CURLException;
