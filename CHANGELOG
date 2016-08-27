@@ -14,22 +14,22 @@ mpyw/co - changelog
 + Refactored Deferred-based flows into Promise-based ones
 + Non-Runtime Throwables with yield statement can be captured everywhere explicitly using try-catch blocks
 
-1.5.1 (2016-08-25)
-------------------
+1.5.1 (2016-08-25) [DELETED]
+----------------------------
 
 - Removed builtin scheduler because of performance issue #24
 + Experimental implementation of Co::race(), Co::any() and Co::all()
 
-1.5.0 (2016-08-19)
-------------------
+1.5.0 (2016-08-19) [DELETED]
+----------------------------
 
 INCOMPATIBLE CHANGES!!
 
 - Removed CURLOPT_PRIVATE based grouping
 + Use builtin scheduler on PHP 7.0.7 or later
 
-1.4.1 (2016-08-18)
-------------------
+1.4.1 (2016-08-18) [DELETED]
+----------------------------
 
 Fix issue #20
 
@@ -38,33 +38,33 @@ Fix issue #20
   From now on it is tested on Utils::getYieldables().
 + Generator duplication check is newly added.
 
-1.4.0 (2016-08-13)
-------------------
+1.4.0 (2016-08-13) [DELETED]
+----------------------------
 
 INCOMPATIBLE CHANGES!! Fix issue #18
 
 - Disabled Exception-safe/Exception-unsafe inheritances
 - Removed `Co::UNSAFE`
 
-1.3.2 (2016-08-12)
-------------------
+1.3.2 (2016-08-12) [DELETED]
+----------------------------
 
 + Many internal fixes
 
-1.3.1 (2016-08-11)
-------------------
+1.3.1 (2016-08-11) [DELETED]
+----------------------------
 
 + Implemented new option: "group"
 
-1.3.0 (2016-08-05)
-------------------
+1.3.0 (2016-08-05) [DELETED]
+----------------------------
 
 + Better exception handling for Co::async()
 + Improved exception type choices
 + Changed some error messages
 
-1.2.0 (2016-08-02)
-------------------
+1.2.0 (2016-08-02) [DELETED]
+----------------------------
 
 INCOMPATIBLE CHANGES!!
 
@@ -72,38 +72,38 @@ INCOMPATIBLE CHANGES!!
 - Resolving Closure
 + Resolving Generator Closure (Closure that contains `yield` keywords)
 
-1.1.5 (2016-07-21)
-------------------
+1.1.5 (2016-07-21) [DELETED]
+----------------------------
 
 + Supported destination specification by CURLOPT_PRIVATE
 
-1.1.4 (2016-07-21)
-------------------
+1.1.4 (2016-07-21) [DELETED]
+----------------------------
 
 + Fix bug #12: `$diff = $now - $until;` will have no effect for sleeping
 
-1.1.3 (2016-07-21)
-------------------
+1.1.3 (2016-07-21) [DELETED]
+----------------------------
 
 + Fix bug #13: Unlimited concurrency does not work #13
 
-1.1.2 (2016-07-20)
-------------------
+1.1.2 (2016-07-20) [DELETED]
+----------------------------
 
 + Fix bug #12: `$diff = $now - $until;` will have no effect for sleeping (FAIL)
 
-1.1.1 (2016-07-20)
-------------------
+1.1.1 (2016-07-20) [DELETED]
+----------------------------
 
 + Fix bug #11: Generator does not stop in spite of RuntimeException thrown into parent scope
 
-1.1.0 (2016-07-20)
-------------------
+1.1.0 (2016-07-20) [DELETED]
+----------------------------
 
 + New feature Co::DELAY / Co::SLEEP
 + Changed default option value of "interval"
 
-1.0.0 (2016-07-19)
-------------------
+1.0.0 (2016-07-19) [DELETED]
+----------------------------
 
 + First Release
