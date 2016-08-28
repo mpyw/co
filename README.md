@@ -199,9 +199,32 @@ With this check, you can safely call `Co::wait()` or `Co::async()`.
 static Co::isRunning() : bool
 ```
 
-#### Return Value
+### Co::any()<br />Co::race()<br />Co::all()
 
-**`(bool)`**<br />`true` if running, otherwise `false`.
+Return a Generator that resolves with specific value.
+
+```php
+static Co::any(array $value) : \Generator<mixed>
+static Co::race(array $value) : \Generator<mixed>
+static Co::all(array $value) : \Generator<mixed>
+```
+
+| Family | Return Value | Exception |
+|:---:|:---:|:---|
+| `Co::any()` | First Success | `AllFailedException` |
+| `Co::race()` | First Success | First Failure |
+
+- **Jobs CANNOT be canceled.**<br />Incomplete jobs remain even if `Co::any()` or `Co::race()` is resolved.
+- `Co::all(...)` is just a wrapper of `(function () { return yield ...; })()`.<br />It should be only used with `Co::race()` or `Co::any()`.
+
+```php
+Co::wait(function () {
+    $group1 = Co::all([$ch1, $ch2, $ch3]);
+    $group2 = Co::all([$ch4, $ch5, $ch6]);
+    $group1or2 = Co::any([$group1, $group2]);
+    var_dump(yield $group1or2);
+});
+```
 
 ### Co::setDefaultOptions()<br />Co::getDefaultOptions()
 
