@@ -93,6 +93,23 @@ The document has moved
 }
 ```
 
+## Table of Contents
+
+- [Installing](#installing)
+- [API](#api)
+  - **[Co::wait()](#cowait)**
+  - **[Co::async()](#coasync)**
+  - [Co::isRunning()](#coisrunning)
+  - [Co::any() / Co::race() / Co::all()](#coanycoracecoall)
+  - [Co::setDefaultOptions() / Co::getDefaultOptions()](#cosetdefaultoptionscogetdefaultoptions)
+- [Rules](#rules)
+  - **[Conversion on Resolving](#conversion-on-resolving)**
+  - **[Exception-safe or Exception-unsafe Priority](#exception-safe-or-exception-unsafe-priority)**
+  - **[Pseudo-sleep for Each Coroutine](#pseudo-sleep-for-each-coroutine)**
+  - **[Comparison with Generators of PHP7.0+ or PHP5.5~5.6](#comparison-with-generators-of-php70-or-php5556)**
+- [Appendix](#appendix)
+  - [Timing Charts](#timing-charts)
+
 ## Installing
 
 Install via Composer.
@@ -396,11 +413,13 @@ try {
 }
 ```
 
-## Timing Charts
+## Appendix
+
+### Timing Charts
 
 Note that S is equal to Q when `autoschedule` is disabled.
 
-### Basic
+#### Basic
 
 | ID | When |
 |:---:|:---|
@@ -423,7 +442,7 @@ Note that S is equal to Q when `autoschedule` is disabled.
 | CURLINFO_STARTTRANSFER_TIME | HR - S |
 | CURLINFO_TOTAL_TIME | BR - Q |
 
-### With Redirections by `CURLOPT_FOLLOWLOCATION`
+#### With Redirections by `CURLOPT_FOLLOWLOCATION`
 
 | ID | When |
 |:---:|:---|
