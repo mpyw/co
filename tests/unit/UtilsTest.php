@@ -11,8 +11,8 @@ use mpyw\Privator\ProxyException;
 /**
  * @requires PHP 7.0
  */
-class UtilsTest extends \Codeception\TestCase\Test {
-
+class UtilsTest extends \Codeception\TestCase\Test
+{
     use \Codeception\Specify;
 
     public function _before()

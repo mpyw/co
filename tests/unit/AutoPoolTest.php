@@ -16,7 +16,8 @@ use React\Promise\Deferred;
 /**
  * @requires PHP 7.0.7
  */
-class AutoPoolTest extends \Codeception\TestCase\Test {
+class AutoPoolTest extends \Codeception\TestCase\Test
+{
     use \Codeception\Specify;
     private static $pool;
 

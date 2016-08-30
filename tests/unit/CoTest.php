@@ -16,7 +16,8 @@ use AspectMock\Test as test;
 /**
  * @requires PHP 7.0
  */
-class CoTest extends \Codeception\TestCase\Test {
+class CoTest extends \Codeception\TestCase\Test
+{
     use \Codeception\Specify;
     private static $pool;
 

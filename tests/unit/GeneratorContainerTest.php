@@ -8,8 +8,8 @@ use mpyw\Privator\ProxyException;
 /**
  * @requires PHP 7.0
  */
-class GeneratorContainerTest extends \Codeception\TestCase\Test {
-
+class GeneratorContainerTest extends \Codeception\TestCase\Test
+{
     use \Codeception\Specify;
     private static $GeneratorContainer;
 

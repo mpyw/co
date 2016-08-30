@@ -7,8 +7,8 @@ use mpyw\Privator\ProxyException;
 /**
  * @requires PHP 7.0
  */
-class CoOptionTest extends \Codeception\TestCase\Test {
-
+class CoOptionTest extends \Codeception\TestCase\Test
+{
     use \Codeception\Specify;
     private static $CoOption;
 
