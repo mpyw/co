@@ -31,7 +31,7 @@
         "php": ">=7.0.0",
         "codeception/aspect-mock": "^2.0",
         "codeception/codeception": "^2.2",
-        "codeception/specify": "*",
+        "codeception/specify": "^0.4.6",
         "satooshi/php-coveralls": "^1.0",
         "mpyw/privator": "^2.0"
     },
