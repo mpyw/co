@@ -152,7 +152,7 @@ static Co::wait(mixed $value, array $options = []) : mixed
 | `interval` | **`0.002`** | `curl_multi_select()` timeout seconds. `0` means real-time observation.|
 | `concurrency` | **`6`** | Limit of concurrent TCP connections. `0` means unlimited.<br />The value should be within `10` at most. |
 
-- `Throwable` those are not extended from `RuntimeException`, such as `Error` `Exception` `LogicException` are not captured. If you need to capture them, you have to write your own try-catch blocks in your functions.
+- `Throwable` which are not extended from `RuntimeException`, such as `Error` `Exception` `LogicException` are not captured. If you need to capture them, you have to write your own try-catch blocks in your functions.
 - HTTP/1.1 pipelining can be used only if the TCP connection is already established and verified that uses keep-alive session. It means that **the first bundle of HTTP/1.1 requests CANNOT be pipelined**. You can use it from second `yield` in `Co::wait()` call.
 - To use HTTP/2 multiplexing, you have to build PHP with libcurl 7.43.0+ and `--with-nghttp2`.
 - To use `autoschedule`, PHP 7.0.7 or later is required.
