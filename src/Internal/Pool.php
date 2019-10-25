@@ -78,6 +78,7 @@ class Pool
      */
     public function wait()
     {
+        $active = 0;
         curl_multi_exec($this->mh, $active); // Start requests.
         do {
             // if cURL handle is running, use curl_multi_select()
